@@ -36,13 +36,31 @@ from settings import *
 
 """ PROGRAM TO CREATE FOLDER AND TEXT FILE TO STORE AND DESCRIBE DATA
     THAT WAS GENERATED DURING AN EXPERIMENT. """
-def create_data_storage():
+def create_data_storage(game):
+    # define directory
+    ExperimentID = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(6)])
+    path = "/" + str(game) + "/" + str(create_data_storage)
+    # create directory
+    try:
+        os.mkdir(path)
+    except OSError:
+        print("Creation of the directory %s failed" % path)
+    else:
+        print("Successfully created the directory %s " % path)
 
-    return None
+    """ CALL LINUX COMMAND TO STORE INFO """
+    f = os.popen('date')
+    now = f.read()
+    file = open("parameter_info.txt","w")
+    file.write(now)
+    file.close()
 
-
+    # add settings text file to directory
+    return path
 
 def main():
+
+    create_data_storage('CARTPOLE')
 
     """
     PICK TASK:
@@ -55,57 +73,28 @@ def main():
 
     if game == 'CARTPOLE':
         algorithm = CARTPOLE()
-        optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))
-        policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
-        # save it to a tensor
-        torch.save(loss_per_iteration, 'loss_tensors/cartpole/loss_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        torch.save(iw_per_iteration, 'loss_tensors/cartpole/iw_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        return None
-    if game == 'PENDULUM':
+    elif game == 'PENDULUM':
         algorithm = PENDULUM()
-        optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))
-        policy, loss_per_iteration, _, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
-        # save it to a tensor
-        torch.save(loss_per_iteration, 'loss_tensors/cartpole/loss_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        torch.save(iw_per_iteration, 'loss_tensors/cartpole/iw_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        return None
-    if game == 'ACROBOT':
+    elif game == 'ACROBOT':
         algorithm = ACROBOT()
-        optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))
-        policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
-        # save it to a tensor
-        torch.save(loss_per_iteration, 'loss_tensors/cartpole/loss_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        torch.save(iw_per_iteration, 'loss_tensors/cartpole/iw_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        return None
     if game == 'MOUNTAINCAR_DISCRETE':
         algorithm = MOUNTAINCAR_DISCRETE()
-        optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))
-        policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
-        # save it to a tensor
-        torch.save(loss_per_iteration, 'loss_tensors/cartpole/loss_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        torch.save(iw_per_iteration, 'loss_tensors/cartpole/iw_replay_SO' + str(ID) + '_with_'+ str(args.optim_prob) + '.pt')
-        return None
     else:
         print("please provide a valid game type!!!")
         return None
 
+    """ SET OPTIM PROBABILITIES """
+    optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))
 
+    """ TRAIN AGENT AND GENERATE INFO """
+    policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
 
+    """ GENERATE A DIRECTORY AND STORE DATA THERE """
+    directory = create_data_storage(game)
+    torch.save(loss_per_iteration, 'loss__' +  directory + '.pt')
+    torch.save(iw_per_iteration, 'iw__' + directory + '.pt')
+    torch.save(iw_per_iteration, 'time__' + directory + '.pt')
 
-
-            # print statements ect
-            if args.include_buffer[0] == 1:
-                policy, loss_per_iteration, _, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
-            if args.set_adaptive[0] == 1:
-                print("adaptive_step: %r" % args.adaptive_step)
-                policy, loss_per_iteration, _, iw_per_iteration = algorithm.train_gym_task_adaptive(optim_probabilities, args.adaptive_step[0])
-            else:
-                policy, loss_per_iteration, _, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
-
-            return None
-
-
-    
 
 if __name__ == '__main__':
     main()
