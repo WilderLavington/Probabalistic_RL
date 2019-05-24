@@ -22,13 +22,23 @@ from agents import *
 from objective_function import *
 from NaturalGrad import *
 
-class CARTPOLE(torch.nn.Module):
+""" IMPORT SETTINGS """
+from settings import *
 
-    def __init__(self, task, iterations, sample_size, trajectory_length, batch_size, num_workers, \
-                    normalize, params, include_buffer, buffer_size, optimizer, buffer_update_type, \
-                    sample_reg, apply_filtering, trust_region_reg, approx_lagrange):
-        super(CARTPOLE, self).__init__()
-        self.task = task
+def CARTPOLE():
+    return 1
+
+
+class TRAIN_AGENT(torch.nn.Module):
+
+    """ GENERAL TRAIN AGENT CLASS: USED COELESCE INFORMATION IN ORDER TO TRAIN
+        AGENT FOLLOWING KL(P||Q) SCHEME. INCLUDES ALL SPECS GIVEN IN THE
+        SETTINGS FILE, WHERE EACH OF THESE PARAMETERS CAN BE ADJUSTED. """
+
+    def __init__(self):
+        super(TRAIN_AGENT, self).__init__()
+        # simulation info
+        self.game = game
         self.iterations = iterations
         self.sample_size = sample_size
         self.trajectory_length = trajectory_length
@@ -42,25 +52,27 @@ class CARTPOLE(torch.nn.Module):
         self.optim_params = params
         # replay buffer info
         self.include_buffer = include_buffer
-        if include_buffer == 1:
-            if buffer_size:
-                self.buffer_size = torch.tensor(buffer_size).float()
-            else:
-                self.buffer_size = torch.tensor(sample_size).float()
+        if self.include_buffer == 1:
+            # define size as a tensor
+            self.buffer_size = torch.tensor(buffer_size).float()
             # other info
             self.buffer_states = None
             self.buffer_action = None
             self.buffer_reward = None
             self.buffer_optim = None
             self.buffer_set = False
-        # set buffer update type that will be used
-        self.buffer_update_type = buffer_update_type
-        self.sample_reg = sample_reg
-        self.apply_filtering = apply_filtering
-        self.trust_region_reg = trust_region_reg
-        self.approx_lagrange = approx_lagrange
+            # set buffer update type that will be used
+            self.buffer_update_type = buffer_update_type
+            self.sample_reg = sample_reg
+            self.apply_filtering = apply_filtering
+            self.trust_region_reg = trust_region_reg
+            self.approx_lagrange = approx_lagrange
+
 
     def optimality(self, probabilities):
+        
+        """ GENERATES BERNOULLI OPTIMALITY VARIABLES """
+
         # sample some bernoulli rv under the distribution over probabilities
         optimality_tensor = torch.zeros((self.sample_size, self.trajectory_length, 1))
         # generate a bunch of samples
@@ -69,9 +81,12 @@ class CARTPOLE(torch.nn.Module):
         # return
         return optimality_tensor
 
+
+
     def train_gym_task(self, optim_probabilities):
 
-        """ TRAIN AGENT TO COMPLETE GYM TASK VIA BASELINE ADJUSTED POLICY GRADIENTS """
+        """ MAIN FUNCTION TO TRAIN AGENTS """
+
         # initialize env to get info
         env = gym.make(self.task)
         # get state and action dimensions from enviroment

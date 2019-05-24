@@ -17,6 +17,10 @@ batch_size = 25
 # number of CPU proccesses to handle batches
 workers = 1
 
+""" ENVIROMENT SPECIFIC INFORMATION """
+reward_shaping = lambda r: r
+inv_reward_shaping = lambda r: r
+
 """ THIS IS ALL THE INFO ABOUT IMPORTANCE WEIGHTING BASED GPS """
 # probability of optimality at each step
 optim_prob = 0.99
@@ -28,8 +32,8 @@ set_adaptive = 0
 adaptive_step = 25
 # whether or not to include buffer in training updates
 include_buffer = 1
-# total size of the buffer used for the update
-buffer_size = 50
+# total size of the buffer used for the update (has to be float)
+buffer_size = 50.0
 # type up update within buffer
 buffer_update_type = 'sample'
 # amount of regularization in sampling scheme for sample based buffer updates
