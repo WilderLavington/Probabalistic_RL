@@ -36,21 +36,8 @@ class TRAIN_AGENT(torch.nn.Module):
 
     def __init__(self):
         super(TRAIN_AGENT, self).__init__(task)
-        # set variables
-        self.iterations = iterations
-        self.sample_size = sample_size
-        self.trajectory_length = trajectory_length
-        # DataLoader info
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        # normalize
-        self.normalize = normalize
-        # set optimizer
-        self.optimizer = optimizer
-        self.optim_params = params
-        # replay buffer info
-        self.include_buffer = include_buffer
-
+        # set the task being solved
+        self.task = task
 
     def optimality(self, probabilities):
 
@@ -85,21 +72,35 @@ class TRAIN_AGENT(torch.nn.Module):
             print("optim not supported sorry.")
             return None
 
+    def set_policy(self):
+
+        """ SET THE NUERAL NETWORK MODEL USED FOR THE CURRENT PROBLEM """
+        if agent_model == 'DISCRETE':
+            return RWS_DISCRETE_POLICY(state_size, actions, trajectory_length)
+        elif agent_model = 'CONTINUOUS':
+            return RWS_CONTINUOUS_POLICY(state_size, actions, trajectory_length)
+        elif agent_model = 'CONTINUOUS_TWISTED':
+            return RWS_DISCRETE_TWISTED_POLICY(state_size, actions, trajectory_length)
+        elif agent_model = 'DISCRETE_TWISTED':
+            return RWS_CONTINUOUS_TWISTED_POLICY(state_size, actions, trajectory_length)
+        else:
+            print("error: brah.")
+
     def train_gym_task(self, optim_probabilities):
 
         """ INITIALIZE PRIMARY INTERACTION ENVIROMENT """
         # initialize env
         env = gym.make(self.task)
         # set game
-        game = GAME_SAMPLES(self.task, state_size, action_size, self.task, self.trajectory_length, self.sample_size, reward_shaping)
+        game = GAME_SAMPLES(self.task, state_size, action_size, self.task, trajectory_length, sample_size, reward_shaping)
 
         """ INFO TRACKING """
         # loss tracking
-        loss_per_iteration = torch.zeros((self.iterations))
+        loss_per_iteration = torch.zeros((iterations))
         # time per iteration
-        time_per_iteration = torch.zeros((self.iterations))
+        time_per_iteration = torch.zeros((iterations))
         # non zero importance weights
-        nonzeroiw_per_iteration = torch.zeros((self.iterations))
+        nonzeroiw_per_iteration = torch.zeros((iterations))
         # time for project info
         begining = time.time()
 
@@ -109,18 +110,18 @@ class TRAIN_AGENT(torch.nn.Module):
         # add loss module
         iwloss =  IW_WAKE()
         # add model
-        policy = RWS_DISCRETE_POLICY(state_size, actions, self.trajectory_length)
+        policy = self.set_policy()
         # optimization method
         optimizer = self.set_optimizer(policy)
 
         """ SET BUFFER UPDATE SO WE START STORING OLD SAMPLES """
-        if self.include_buffer == 1:
+        if include_buffer == 1:
             # set the buffer to be used
-            iwloss.set_buffer_size(self.buffer_size)
+            iwloss.set_buffer_size(buffer_size)
             iwloss.start_buffer_updates(True)
 
         """ TRAIN AGENT """
-        for iter in range(self.iterations):
+        for iter in range(iterations):
 
             """ SAMPLE OPTIMALITY VARIABLES """
             optim = self.optimality(probabilities)
@@ -170,13 +171,13 @@ class TRAIN_AGENT(torch.nn.Module):
             nonzeroiw_per_iteration[iter] = exp_iw / counter
 
             """ PRINT STATEMENTS """
-            if iter % floor((self.iterations+1)/100) == 0:
+            if iter % floor((iterations+1)/100) == 0:
                 print("Expected Sum of rewards: " + str(exp))
                 print("Average number of non-zero importance weights: " + str(exp_iw / counter) + " Out of " + str(samples))
                 print("Loss: " + str(loss))
                 print('Time per Iteration: ' + str(end - start) + ' at iteration: ' + str(iter))
                 print('Time elapsed: ' + str((end - begining)/60) + ' minutes.')
-                print("Percent complete: " + str(floor(100*iter/self.iterations)))
+                print("Percent complete: " + str(floor(100*iter/iterations)))
 
         """ RETURN """
         # return the trained policy and the loss per iteration
