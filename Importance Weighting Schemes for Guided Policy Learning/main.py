@@ -31,72 +31,7 @@ from train_agent_PG import *
 from agents import *
 
 def main():
-    # define command line options
-    CLI=argparse.ArgumentParser()
-
-    # chosen enviroment
-    CLI.add_argument("--game", nargs="*", type=str, default=['CARTPOLE'])
-    CLI.add_argument("--trajectory_length", nargs="*",  type=int, default=[200])
-    CLI.add_argument("--agent_model", nargs="*",  type=str, default=['DISCRETE'])
-
-    # training info
-    CLI.add_argument("--sample_size", nargs="*",  type=int, default=[25])
-    CLI.add_argument("--iterations", nargs="*",  type=int, default=[500])
-    CLI.add_argument("--batch_size", nargs="*",  type=int, default=[5])
-    CLI.add_argument("--workers", nargs="*",  type=int, default=[2])
-
-    # objective used to train (PG, MPG, RWS, TRPO, PPO, AC, SAC, SQ)
-    CLI.add_argument("--objective", nargs="*", type=str, default=['RWS'])
-
-    # RWS params
-    CLI.add_argument("--optim_prob", nargs="*", type=float, default=[0.95])
-    CLI.add_argument("--normalize", nargs="*",  type=int, default=[1])
-
-    # adaptive info
-    CLI.add_argument("--set_adaptive", nargs="*",  type=int, default=[0])
-    CLI.add_argument("--adaptive_step", nargs="*",  type=int, default=[25])
-
-    # buffer and filter info
-    CLI.add_argument("--include_buffer", nargs="*",  type=int, default=[0])
-    CLI.add_argument("--buffer_size", nargs="*",  type=int, default=[100])
-    CLI.add_argument("--buffer_update_type", nargs="*", type=str, default=['sample'])
-    CLI.add_argument("--sample_reg", nargs="*",  type=int, default=[0.])
-    CLI.add_argument("--apply_filtering", nargs="*",  type=int, default=[0])
-
-    # trust region info
-    CLI.add_argument("--trust_region_reg", nargs="*",  type=int, default=[0])
-    CLI.add_argument("--approx_lagrange", nargs="*",  type=float, default=[0.01])
-
-    # PG params (objective types)
-    CLI.add_argument("--max_ent_reg", nargs="*", type=int, default=[0])
-    CLI.add_argument("--max_ent_reg_decay", nargs="*", type=int, default=[0.])
-
-    # Trust region methods params
-    CLI.add_argument("--PPO", nargs="*", type=int, default=[0])
-    CLI.add_argument("--TRPO", nargs="*", type=int, default=[0])
-
-    # advantage estimation
-    CLI.add_argument("--GAE", nargs="*", type=int, default=[0])
-
-    # off policy sampling
-    CLI.add_argument("--off_policy_samples", nargs="*", type=int, default=[0.])
-    CLI.add_argument("--off_policy_batch_size", nargs="*", type=int, default=[0.])
-
-    # AC params
-    CLI.add_argument("--AC", nargs="*", type=int, default=[0])
-    CLI.add_argument("--A2C", nargs="*", type=int, default=[0])
-    CLI.add_argument("--A3C", nargs="*", type=int, default=[0])
-
-    # Q learning params
-
-    # optimization params
-    CLI.add_argument("--optim", nargs="*",  type=str, default=['Adam'])
-    CLI.add_argument("--lr", nargs="*",  type=float, default=[5e-4])
-    CLI.add_argument("--weight_decay", nargs="*",  type=float, default=[0.0])
-    CLI.add_argument("--beta_1", nargs="*",  type=float, default=[0.8])
-    CLI.add_argument("--beta_2", nargs="*",  type=float, default=[0.9])
-    CLI.add_argument("--lambd", nargs="*",  type=float, default=[1e-2])
-    CLI.add_argument("--alpha", nargs="*",  type=float, default=[0.75])
+    
 
     # parse command line arguments
     args = CLI.parse_args()
