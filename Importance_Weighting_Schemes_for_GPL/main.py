@@ -29,9 +29,6 @@ from objective_function import *
 from train_agent import *
 from agents import *
 
-""" IMPORT SETTINGS """
-from settings import *
-
 """ PROGRAM TO CREATE FOLDER AND TEXT FILE TO STORE AND DESCRIBE DATA
     THAT WAS GENERATED DURING AN EXPERIMENT. """
 def create_data_storage(game):
@@ -67,17 +64,8 @@ def main():
         4. MOUNTAIN-CAR DISCRETE
     """
 
-    if game == 'CARTPOLE':
-        algorithm = CARTPOLE()
-    elif game == 'PENDULUM':
-        algorithm = PENDULUM()
-    elif game == 'ACROBOT':
-        algorithm = ACROBOT()
-    if game == 'MOUNTAINCAR_DISCRETE':
-        algorithm = MOUNTAINCAR_DISCRETE()
-    else:
-        print("please provide a valid game type!!!")
-        return None
+    """ INITIALIZE AGENT TRAINING CLASS """
+    algorithm = TRAIN_AGENT(task)
 
     """ SET OPTIM PROBABILITIES """
     optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))

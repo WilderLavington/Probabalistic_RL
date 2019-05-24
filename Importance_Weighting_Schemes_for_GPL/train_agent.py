@@ -22,12 +22,11 @@ from agents import *
 from objective_function import *
 from NaturalGrad import *
 
-""" IMPORT SETTINGS """
-from settings import *
-
-def CARTPOLE():
-    return 1
-
+""" SET GAME TYPE VIA IMPORT SETTINGS """
+from settings_ACROBOT import *
+# from settings_MOUNTAINCAR_DISC import *
+# from settings_CARTPOLE import *
+# from settings_PENDULUM import *
 
 class TRAIN_AGENT(torch.nn.Module):
 
@@ -36,9 +35,8 @@ class TRAIN_AGENT(torch.nn.Module):
         SETTINGS FILE, WHERE EACH OF THESE PARAMETERS CAN BE ADJUSTED. """
 
     def __init__(self):
-        super(TRAIN_AGENT, self).__init__()
-        # simulation info
-        self.game = game
+        super(TRAIN_AGENT, self).__init__(task)
+        # set variables
         self.iterations = iterations
         self.sample_size = sample_size
         self.trajectory_length = trajectory_length
@@ -52,27 +50,11 @@ class TRAIN_AGENT(torch.nn.Module):
         self.optim_params = params
         # replay buffer info
         self.include_buffer = include_buffer
-        if self.include_buffer == 1:
-            # define size as a tensor
-            self.buffer_size = torch.tensor(buffer_size).float()
-            # other info
-            self.buffer_states = None
-            self.buffer_action = None
-            self.buffer_reward = None
-            self.buffer_optim = None
-            self.buffer_set = False
-            # set buffer update type that will be used
-            self.buffer_update_type = buffer_update_type
-            self.sample_reg = sample_reg
-            self.apply_filtering = apply_filtering
-            self.trust_region_reg = trust_region_reg
-            self.approx_lagrange = approx_lagrange
 
 
     def optimality(self, probabilities):
-        
-        """ GENERATES BERNOULLI OPTIMALITY VARIABLES """
 
+        """ GENERATES BERNOULLI OPTIMALITY VARIABLES """
         # sample some bernoulli rv under the distribution over probabilities
         optimality_tensor = torch.zeros((self.sample_size, self.trajectory_length, 1))
         # generate a bunch of samples
@@ -81,23 +63,35 @@ class TRAIN_AGENT(torch.nn.Module):
         # return
         return optimality_tensor
 
+    def set_optimizer(self, policy):
 
+        """ INITIALIZE CHOSEN OPTIMIZER """
+        if self.optimizer == "Adam":
+            optimizer = torch.optim.Adam(policy.parameters(), lr = lr, betas = (beta_1, beta_2),
+                    weight_decay = weight_decay)
+            return optimizer
+        elif self.optimizer == "ASGD":
+            optimizer = torch.optim.ASGD(policy.parameters(), lr = lr, lambd=lambd, alpha = alpha,
+                    weight_decay = weight_decay)
+            return optimizer
+        elif self.optimizer == "SGD":
+            optimizer = torch.optim.SGD(policy.parameters(), lr = lr, lambd = lambd, alpha = alpha,
+                    weight_decay = weight_decay)
+            return optimizer
+        elif self.optimizer == "NaturalGrad":
+            optimizer = NaturalGrad(policy.parameters(), lr = lr, decay = lambd, L2reg = weight_decay)
+            return optimizer
+        else:
+            print("optim not supported sorry.")
+            return None
 
     def train_gym_task(self, optim_probabilities):
 
-        """ MAIN FUNCTION TO TRAIN AGENTS """
-
-        # initialize env to get info
-        env = gym.make(self.task)
-        # get state and action dimensions from enviroment
-        action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
-        state_size = 4 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
-        actions = 2 # env.action_space.n
-
         """ INITIALIZE PRIMARY INTERACTION ENVIROMENT """
-        reward_shaping = lambda r: 5*r - 6
-        rev_reward_shaping = lambda r: (r+6)/5
-        game = RWS_CARTPOLE_GAME_SAMPLES(state_size, action_size, self.task, self.trajectory_length, self.sample_size, reward_shaping)
+        # initialize env
+        env = gym.make(self.task)
+        # set game
+        game = GAME_SAMPLES(self.task, state_size, action_size, self.task, self.trajectory_length, self.sample_size, reward_shaping)
 
         """ INFO TRACKING """
         # loss tracking
@@ -109,34 +103,18 @@ class TRAIN_AGENT(torch.nn.Module):
         # time for project info
         begining = time.time()
 
-        """ INITIALIZE WHAT WE CAN """
+        """ INITIALIZE OBJECTIVE, POLICY, AND OPTIMIZER """
         # add probs
         probabilities = optim_probabilities
         # add loss module
-        iwloss =  IW_WAKE(self.trajectory_length, self.sample_size, probabilities, self.normalize, rev_reward_shaping, self.buffer_update_type, \
-                            self.sample_reg, self.apply_filtering, self.trust_region_reg, self.approx_lagrange)
+        iwloss =  IW_WAKE()
         # add model
         policy = RWS_DISCRETE_POLICY(state_size, actions, self.trajectory_length)
-
-        """ INITIALIZE CHOSEN OPTIMIZER """
-        if self.optimizer == "Adam":
-            optimizer = torch.optim.Adam(policy.parameters(), lr=self.optim_params["lr"], betas = self.optim_params["betas"],
-                    weight_decay = self.optim_params["weight_decay"])
-        elif self.optimizer == "ASGD":
-            optimizer = torch.optim.ASGD(policy.parameters(), lr=self.optim_params["lr"], lambd = self.optim_params["lambd"], alpha = self.optim_params["alpha"],
-                    weight_decay = self.optim_params["weight_decay"])
-        elif self.optimizer == "SGD":
-            optimizer = torch.optim.SGD(policy.parameters(), lr=self.optim_params["lr"], lambd = self.optim_params["lambd"], alpha = self.optim_params["alpha"],
-                    weight_decay = self.optim_params["weight_decay"])
-        elif self.optimizer == "NaturalGrad":
-            optimizer = NaturalGrad(policy.parameters(), learning_rate=self.optim_params["lr"], decay = self.optim_params["lambd"],
-                    L2reg = self.optim_params["weight_decay"])
-        else:
-            print("optim not supported sorry.")
-            return None
+        # optimization method
+        optimizer = self.set_optimizer(policy)
 
         """ SET BUFFER UPDATE SO WE START STORING OLD SAMPLES """
-        if self.include_buffer:
+        if self.include_buffer == 1:
             # set the buffer to be used
             iwloss.set_buffer_size(self.buffer_size)
             iwloss.start_buffer_updates(True)

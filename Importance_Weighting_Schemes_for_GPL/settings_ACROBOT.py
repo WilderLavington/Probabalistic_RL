@@ -18,8 +18,13 @@ batch_size = 25
 workers = 1
 
 """ ENVIROMENT SPECIFIC INFORMATION """
+# reward shaping
 reward_shaping = lambda r: r
 inv_reward_shaping = lambda r: r
+# get state and action dimensions from enviroment
+action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
+state_size = 6 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
+actions = 3 # env.action_space.n
 
 """ THIS IS ALL THE INFO ABOUT IMPORTANCE WEIGHTING BASED GPS """
 # probability of optimality at each step
