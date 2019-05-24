@@ -27,19 +27,17 @@ from train_agent import *
 from game_enviroments import *
 from objective_function import *
 from train_agent import *
-from train_agent_PG import *
 from agents import *
 
 """ IMPORT SETTINGS """
 from settings import *
-
 
 """ PROGRAM TO CREATE FOLDER AND TEXT FILE TO STORE AND DESCRIBE DATA
     THAT WAS GENERATED DURING AN EXPERIMENT. """
 def create_data_storage(game):
     # define directory
     ExperimentID = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(6)])
-    path = "/" + str(game) + "/" + str(create_data_storage)
+    path = str(game) + "__" + str(ExperimentID)
     # create directory
     try:
         os.mkdir(path)
@@ -48,10 +46,10 @@ def create_data_storage(game):
     else:
         print("Successfully created the directory %s " % path)
 
-    """ CALL LINUX COMMAND TO STORE INFO """
-    f = os.popen('date')
+    """ CALL LINUX COMMAND TO STORE INFO IN .TXT"""
+    f = os.popen('date \n cat settings.py')
     now = f.read()
-    file = open("parameter_info.txt","w")
+    file = open(path + "/parameter_info.txt","w")
     file.write(now)
     file.close()
 
@@ -70,7 +68,7 @@ def main():
         3. ACROBOT
         4. MOUNTAIN-CAR DISCRETE
     """
-
+    
     if game == 'CARTPOLE':
         algorithm = CARTPOLE()
     elif game == 'PENDULUM':
