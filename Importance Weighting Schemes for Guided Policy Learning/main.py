@@ -31,9 +31,6 @@ from train_agent_PG import *
 from agents import *
 
 def main():
-    print("wow")
-    print("wow")
-    print("wow")
     # define command line options
     CLI=argparse.ArgumentParser()
 
