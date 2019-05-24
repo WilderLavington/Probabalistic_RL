@@ -58,8 +58,6 @@ def create_data_storage(game):
 
 def main():
 
-    create_data_storage('CARTPOLE')
-
     """
     PICK TASK:
         CURRENTLY IMPLENTED TASKS INCLUDE,
@@ -68,7 +66,7 @@ def main():
         3. ACROBOT
         4. MOUNTAIN-CAR DISCRETE
     """
-    
+
     if game == 'CARTPOLE':
         algorithm = CARTPOLE()
     elif game == 'PENDULUM':
