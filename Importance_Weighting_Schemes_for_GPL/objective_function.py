@@ -69,7 +69,8 @@ class IW_WAKE(torch.nn.Module):
         self.begin_buffer_updates = use
         return None
 
-    def update_buffer_SB(self, new_states, new_actions, new_rewards, new_optim, current_policy, fresh_buffer):
+    """ SAMPLE BASED APPROACH BASED UPON NORMALIZED REWARDS BETWEEN ALL TRAJECTORIES """
+    def update_buffer_RS(self, new_states, new_actions, new_rewards, new_optim, current_policy, fresh_buffer):
         # set the current buffer size
         buffer_size = self.buffer_size
         # if the buffer is currently empty replace it sorted states
@@ -146,7 +147,8 @@ class IW_WAKE(torch.nn.Module):
         # return buffer info
         return self.buffer_states, self.buffer_action, self.buffer_reward, self.buffer_optim, buffer_distribution
 
-    def update_buffer_weight_sample_based(self, new_states, new_actions, new_rewards, new_optim, fresh_buffer, current_policy, iw):
+    """ SAMPLE BASED APPROACH FOLLOWING THE IMPORTANCE WEIGHTS OF THE ORIGNAL DISTRIBUTION """
+    def update_buffer_IWS(self, new_states, new_actions, new_rewards, new_optim, fresh_buffer, current_policy, iw):
         # set the current buffer size
         buffer_size = self.buffer_size
         # if the buffer is currently empty replace it sorted states
@@ -217,7 +219,7 @@ class IW_WAKE(torch.nn.Module):
         # return buffer info
         return self.buffer_states, self.buffer_action, self.buffer_reward, self.buffer_optim, buffer_distribution
 
-
+    """ GREEDY BUFFER UPDATE TAKING THE N HIGHEST SCORING TRAJECTORIES """
     def update_buffer_greedy(self, new_states, new_actions, new_rewards, new_optim, new_weights, current_policy):
         # compute cumulative rewards through time for each sample
         cum_rewards = torch.sum(new_rewards, dim=1)
@@ -272,7 +274,7 @@ class IW_WAKE(torch.nn.Module):
         # return buffer info
         return self.buffer_states, self.buffer_action, self.buffer_reward, self.buffer_optim
 
-    """ THIS ONE USES THE POLICY FROM THE PREVIOUS ITERATION + FRANKS THING """
+    """ LOSS FUNCTION FOR REINFORCEMENT LEARNING AS IMPORTANCE WEIGHTED APPROXIMATE INFERENCE FOLLOWING KL(P||Q) """
     def forward(self, policy, state_tensor, action_tensor, reward_tensor, optimality_tensor):
 
         # compute total number of samples used in the update
