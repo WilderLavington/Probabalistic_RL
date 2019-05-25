@@ -25,6 +25,8 @@ inv_reward_shaping = lambda r: r
 action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
 state_size = 3 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
 action_box = torch.tensor([-2.0, 2.0])
+# must convert to numpy for openai gym
+action_transform = lambda action: action.numpy()
 
 """ THIS IS ALL THE INFO ABOUT IMPORTANCE WEIGHTING BASED GPS """
 # probability of optimality at each step

@@ -92,7 +92,8 @@ class TRAIN_AGENT(torch.nn.Module):
         # initialize env
         env = gym.make(self.task)
         # set game
-        game = GAME_SAMPLES(self.task, state_size, action_size, self.task, trajectory_length, sample_size, reward_shaping)
+        game = GAME_SAMPLES(self.task, state_size, action_size, self.task, trajectory_length, \
+                    sample_size, action_transform, reward_shaping)
 
         """ INFO TRACKING """
         # loss tracking
