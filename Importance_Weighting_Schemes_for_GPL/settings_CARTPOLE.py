@@ -38,15 +38,15 @@ adaptive_step = 25
 # whether or not to include buffer in training updates
 include_buffer = 1
 # total size of the buffer used for the update (has to be float)
-buffer_size = 50.0
+buffer_size = 500.0
 # type up update within buffer
 buffer_update_type = 'sample_iw'
 # amount of regularization in sampling scheme for sample based buffer updates
-sample_reg = 0.001
+sample_reg = 0.0
 # include trust region regularization
-trust_region_reg = 0
+trust_region_reg = 5
 # the approximate lagrange multiplier term to use
-approx_lagrange = 0.02
+approx_lagrange = 0.01
 
 
 """ THIS IS ALL THE INFO ABOUT THE AGENT MODEL USED """
@@ -63,9 +63,9 @@ lr = 5e-4
 # this is the weight regularization for the parameters
 weight_decay = 0.0
 # this is the first order averaging term in Adam
-beta_1 = 0.8
+beta_1 = 0.5
 # this is the second order averaging term in Adam
-beta_2 = 0.9
+beta_2 = 0.5
 # this is the learning rate decay in SGD and ASGD
 lambd = 1e-4
 # this is the averaging term in ASGD

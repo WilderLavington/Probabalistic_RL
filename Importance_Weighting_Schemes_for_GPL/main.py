@@ -70,7 +70,7 @@ def main():
     # chosen enviroment
     CLI.add_argument("--task", nargs="*", type=str, default=["CartPole-v0"])
     CLI.add_argument("--trajectory_length", nargs="*", type=int, default=[200])
-    CLI.add_argument("--optim_prob", nargs="*", type=float, default=[0.99])
+    CLI.add_argument("--optim_prob", nargs="*", type=float, default=[1.0])
     # parse command line arguments
     args = CLI.parse_args()
     # print general training info
@@ -91,9 +91,9 @@ def main():
     policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
 
     """ STORE DATA IN THE DIRECTORY """
-    torch.save(directory + '/' + loss_per_iteration, 'loss__' +  directory + '.pt')
-    torch.save(directory + '/' + iw_per_iteration, 'iw__' + directory + '.pt')
-    torch.save(directory + '/' + time_per_iteration, 'time__' + directory + '.pt')
+    torch.save(loss_per_iteration, directory + '/' + 'loss__' +  directory + '.pt')
+    torch.save(iw_per_iteration, directory + '/' + 'iw__' + directory + '.pt')
+    torch.save(time_per_iteration, directory + '/' + 'time__' + directory + '.pt')
 
 
 if __name__ == '__main__':
