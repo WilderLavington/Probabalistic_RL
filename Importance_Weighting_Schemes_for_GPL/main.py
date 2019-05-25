@@ -64,8 +64,15 @@ def main():
         4. MOUNTAIN-CAR DISCRETE
     """
 
+    # define command line options
+    CLI=argparse.ArgumentParser()
+    # chosen enviroment
+    CLI.add_argument("--task", nargs="*", type=str, default=['CARTPOLE'])
+    # print general training info
+    print("task: %r" % args.task)
+
     """ INITIALIZE AGENT TRAINING CLASS """
-    algorithm = TRAIN_AGENT(task)
+    algorithm = TRAIN_AGENT(args.task)
 
     """ SET OPTIM PROBABILITIES """
     optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))
