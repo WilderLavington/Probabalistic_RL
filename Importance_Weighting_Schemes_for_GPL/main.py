@@ -64,18 +64,25 @@ def main():
         4. MOUNTAIN-CAR DISCRETE
     """
 
+    """ COMMAND LINE ARGUMENTS """
     # define command line options
     CLI=argparse.ArgumentParser()
     # chosen enviroment
-    CLI.add_argument("--task", nargs="*", type=str, default=['CARTPOLE'])
+    CLI.add_argument("--task", nargs="*", type=str, default=["CartPole-v0"])
+    CLI.add_argument("--trajectory_length", nargs="*", type=int, default=[200])
+    CLI.add_argument("--optim_prob", nargs="*", type=float, default=[0.99])
+    # parse command line arguments
+    args = CLI.parse_args()
     # print general training info
     print("task: %r" % args.task)
+    print("trajectory_length: %r" % args.trajectory_length)
+    print("optim_prob: %r" % args.optim_prob)
 
     """ INITIALIZE AGENT TRAINING CLASS """
-    algorithm = TRAIN_AGENT(args.task)
+    algorithm = TRAIN_AGENT(args.task[0])
 
     """ SET OPTIM PROBABILITIES """
-    optim_probabilities = optim_prob*torch.ones((args.trajectory_length[0]))
+    optim_probabilities = args.optim_prob[0]*torch.ones((args.trajectory_length[0]))
 
     """ TRAIN AGENT AND GENERATE INFO """
     policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)

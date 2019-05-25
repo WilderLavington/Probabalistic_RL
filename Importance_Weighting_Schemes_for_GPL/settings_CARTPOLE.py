@@ -5,7 +5,7 @@
 
 """ BASIC ENVIROMENT INFO  """
 # the game enviroment that the agent will interact with
-game = 'CARTPOLE'
+game = "CartPole-v0"
 # the total time that the agent will interact with the simulator
 trajectory_length = 200
 # describes the total samples that are gathered via interaction with the simulator per iteration
@@ -19,8 +19,8 @@ workers = 1
 
 """ ENVIROMENT SPECIFIC INFORMATION """
 # reward shaping
-reward_shaping = lambda r: r
-inv_reward_shaping = lambda r: r
+reward_shaping = lambda r: 5*r - 6
+inv_reward_shaping = lambda r: (r + 6) / 5
 # get state and action dimensions from enviroment
 action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
 state_size = 4 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
@@ -42,13 +42,14 @@ include_buffer = 1
 # total size of the buffer used for the update (has to be float)
 buffer_size = 50.0
 # type up update within buffer
-buffer_update_type = 'sample'
+buffer_update_type = 'sample_iw'
 # amount of regularization in sampling scheme for sample based buffer updates
 sample_reg = 0.001
 # include trust region regularization
 trust_region_reg = 0
 # the approximate lagrange multiplier term to use
 approx_lagrange = 0.02
+
 
 """ THIS IS ALL THE INFO ABOUT THE AGENT MODEL USED """
 # size of hidden layer
@@ -58,7 +59,7 @@ agent_model = 'DISCRETE'
 
 """ ALL INFO REGARDING THE OPTIMIZATION SCHEME USED """
 # this represents the chosen optimization method used
-optim = 'Adam'
+optimize = 'Adam'
 # this is the stepsize for the chosen optimization method
 lr = 5e-4
 # this is the weight regularization for the parameters

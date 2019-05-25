@@ -19,7 +19,7 @@ class IW_WAKE(torch.nn.Module):
 
     """ POLICY GRADIENTS LOSS FUNCTION """
     def __init__(self, trajectory_length, simulations, probabilities, normalize, rev_reward_shaping, buffer_update_type, \
-                sample_reg, apply_filtering, trust_region_reg, approx_lagrange):
+                sample_reg, trust_region_reg, approx_lagrange):
         """ INITIALIZATIONS """
         super(IW_WAKE, self).__init__()
         self.simulations = simulations
@@ -47,8 +47,6 @@ class IW_WAKE(torch.nn.Module):
         # choose buffer update type
         self.buffer_update_type = buffer_update_type
         self.sample_reg = trajectory_length / 10
-        # should we filter samples prior to update
-        self.apply_filtering = apply_filtering
         # use trust region method
         self.trust_region_reg = trust_region_reg
         # value for approximate lagrange multiplier
@@ -62,7 +60,7 @@ class IW_WAKE(torch.nn.Module):
         return None
 
     def set_buffer_size(self, buffer_size):
-        self.buffer_size = buffer_size.int()
+        self.buffer_size = int(buffer_size)
         return None
 
     def start_buffer_updates(self, use):
@@ -315,7 +313,7 @@ class IW_WAKE(torch.nn.Module):
             """ ADD FRANKS THING """
             # sum accross time
             buffer_sum_opt_scoreFxn = torch.sum(buffer_opt_scoreFxn, dim=1)
-            buffer_sum_opt_scoreFxn = torch.log(torch.exp(buffer_sum_opt_scoreFxn) + 1 / (self.current_buffer_size.float()))
+            buffer_sum_opt_scoreFxn = torch.log(torch.exp(buffer_sum_opt_scoreFxn) + 1 / (self.current_buffer_size))
 
             """ COMPUTE BUFFER IMPORTANCE WEIGHTS """
             # sum through time to get the iw
@@ -393,15 +391,13 @@ class IW_WAKE(torch.nn.Module):
             # compute exponential for the weights
             total_iw = torch.exp(total_iw)
 
+
         """ UPDATE BUFFER FOR FUTURE ITERATIONS """
         if self.begin_buffer_updates:
             if self.buffer_update_type == 'sample':
-                if self.apply_filtering == 1:
-                    self.update_buffer_sample_based(state_tensor, action_tensor, reward_tensor, optimality_tensor, policy, True)
-                else:
-                    self.update_buffer_sample_based(state_tensor, action_tensor, reward_tensor, optimality_tensor, policy, False)
-            elif self.buffer_update_type == 'weight_sample':
-                self.update_buffer_weight_sample_based(state_tensor, action_tensor, reward_tensor, optimality_tensor, False, policy, total_iw)
+                self.update_buffer_RS(state_tensor, action_tensor, reward_tensor, optimality_tensor, policy, False)
+            elif self.buffer_update_type == 'sample_iw':
+                self.update_buffer_IWS(state_tensor, action_tensor, reward_tensor, optimality_tensor, False, policy, total_iw)
             else:
                 self.update_buffer_greedy(state_tensor, action_tensor, reward_tensor, optimality_tensor, iw, policy)
 

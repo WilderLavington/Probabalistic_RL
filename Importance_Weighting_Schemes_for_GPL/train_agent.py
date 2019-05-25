@@ -34,8 +34,8 @@ class TRAIN_AGENT(torch.nn.Module):
         AGENT FOLLOWING KL(P||Q) SCHEME. INCLUDES ALL SPECS GIVEN IN THE
         SETTINGS FILE, WHERE EACH OF THESE PARAMETERS CAN BE ADJUSTED. """
 
-    def __init__(self):
-        super(TRAIN_AGENT, self).__init__(task)
+    def __init__(self, task):
+        super(TRAIN_AGENT, self).__init__()
         # set the task being solved
         self.task = task
 
@@ -43,9 +43,9 @@ class TRAIN_AGENT(torch.nn.Module):
 
         """ GENERATES BERNOULLI OPTIMALITY VARIABLES """
         # sample some bernoulli rv under the distribution over probabilities
-        optimality_tensor = torch.zeros((self.sample_size, self.trajectory_length, 1))
+        optimality_tensor = torch.zeros((sample_size, trajectory_length, 1))
         # generate a bunch of samples
-        for j in range(self.sample_size ):
+        for j in range(sample_size):
             optimality_tensor[j,:,0] = bern(probabilities).sample()
         # return
         return optimality_tensor
@@ -53,19 +53,19 @@ class TRAIN_AGENT(torch.nn.Module):
     def set_optimizer(self, policy):
 
         """ INITIALIZE CHOSEN OPTIMIZER """
-        if self.optimizer == "Adam":
+        if optimize == "Adam":
             optimizer = torch.optim.Adam(policy.parameters(), lr = lr, betas = (beta_1, beta_2),
                     weight_decay = weight_decay)
             return optimizer
-        elif self.optimizer == "ASGD":
+        elif optimize == "ASGD":
             optimizer = torch.optim.ASGD(policy.parameters(), lr = lr, lambd=lambd, alpha = alpha,
                     weight_decay = weight_decay)
             return optimizer
-        elif self.optimizer == "SGD":
+        elif optimize == "SGD":
             optimizer = torch.optim.SGD(policy.parameters(), lr = lr, lambd = lambd, alpha = alpha,
                     weight_decay = weight_decay)
             return optimizer
-        elif self.optimizer == "NaturalGrad":
+        elif optimize == "NaturalGrad":
             optimizer = NaturalGrad(policy.parameters(), lr = lr, decay = lambd, L2reg = weight_decay)
             return optimizer
         else:
@@ -77,11 +77,11 @@ class TRAIN_AGENT(torch.nn.Module):
         """ SET THE NUERAL NETWORK MODEL USED FOR THE CURRENT PROBLEM """
         if agent_model == 'DISCRETE':
             return RWS_DISCRETE_POLICY(state_size, actions, trajectory_length)
-        elif agent_model = 'CONTINUOUS':
+        elif agent_model == 'CONTINUOUS':
             return RWS_CONTINUOUS_POLICY(state_size, actions, trajectory_length)
-        elif agent_model = 'CONTINUOUS_TWISTED':
+        elif agent_model == 'CONTINUOUS_TWISTED':
             return RWS_DISCRETE_TWISTED_POLICY(state_size, actions, trajectory_length)
-        elif agent_model = 'DISCRETE_TWISTED':
+        elif agent_model == 'DISCRETE_TWISTED':
             return RWS_CONTINUOUS_TWISTED_POLICY(state_size, actions, trajectory_length)
         else:
             print("error: brah.")
@@ -92,7 +92,7 @@ class TRAIN_AGENT(torch.nn.Module):
         # initialize env
         env = gym.make(self.task)
         # set game
-        game = GAME_SAMPLES(self.task, state_size, action_size, self.task, trajectory_length, \
+        game = GAME_SAMPLES(state_size, action_size, self.task, trajectory_length, \
                     sample_size, action_transform, reward_shaping)
 
         """ INFO TRACKING """
@@ -109,8 +109,8 @@ class TRAIN_AGENT(torch.nn.Module):
         # add probs
         probabilities = optim_probabilities
         # add loss module
-        iwloss =  IW_WAKE(trajectory_length, simulations, probabilities, normalize, rev_reward_shaping, buffer_update_type, \
-                            sample_reg, apply_filtering, trust_region_reg, approx_lagrange)
+        iwloss =  IW_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
+                            sample_reg, trust_region_reg, approx_lagrange)
         # add model
         policy = self.set_policy()
         # optimization method
@@ -138,7 +138,7 @@ class TRAIN_AGENT(torch.nn.Module):
             # initialize pytorch dataset for efficient data loading
             data = torch.utils.data.TensorDataset(state_total, action_total.long(), reward_total, optim)
             # set data loader
-            data_loader = torch.utils.data.DataLoader(data, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+            data_loader = torch.utils.data.DataLoader(data, batch_size=batch_size, shuffle=True, num_workers=workers)
             # set average to so current expectation
             exp_iw = 0
             counter = 0
@@ -158,10 +158,10 @@ class TRAIN_AGENT(torch.nn.Module):
 
             """ RE-RUN EXPERIMENTS UNDER OPTIMALITY TO SEE HOW WE ARE DOING """
             _, _, reward_total = game.sample_game(env, policy, torch.ones(optim.size()))
-            exp = torch.sum(torch.sum(rev_reward_shaping(reward_total),1)/self.sample_size)
+            exp = torch.sum(torch.sum(inv_reward_shaping(reward_total),1)/sample_size)
 
             """ START USING REPLAY BUFFER NOW THAT WE HAVE SAMPLES """
-            if self.include_buffer:
+            if include_buffer:
                 # set the buffer to be used
                 iwloss.use_buffer(True)
 

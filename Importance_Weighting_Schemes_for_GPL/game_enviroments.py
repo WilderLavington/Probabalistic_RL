@@ -61,7 +61,7 @@ class GAME_SAMPLES(torch.nn.Module):
                 self.states_batch[sample,t,:] = torch.tensor(current_state)
                 self.actions_batch[sample,t,:] = policy(self.states_batch[sample,t,:], optimality_tensor[sample,t])
                 # update stacked
-                action = self.action_transform(self.actions_batch[sample,t,:].int()[0].numpy()
+                action = self.action_transform(self.actions_batch[sample,t,:])
                 # take a step in the enviroment
                 current_state, reward, done, info = self.env.step(action)
                 # add the reward
