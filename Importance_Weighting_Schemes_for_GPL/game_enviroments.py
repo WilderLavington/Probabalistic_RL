@@ -15,12 +15,6 @@ from torch.distributions.bernoulli import Bernoulli
 import os
 import torch.distributed as dist
 
-""" SET GAME TYPE VIA IMPORT SETTINGS """
-from settings_CARTPOLE import *
-# from settings_ACROBOT import *
-# from settings_MOUNTAINCAR_DISC import *
-# from settings_PENDULUM import *
-
 class GAME_SAMPLES(torch.nn.Module):
 
     """ USED AS CONTAINER FOR TRAJECTORY BATCHES TO SAVE INITIALIZATION TIME """

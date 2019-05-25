@@ -23,9 +23,9 @@ from objective_function import *
 from NaturalGrad import *
 
 """ SET GAME TYPE VIA IMPORT SETTINGS """
-from settings_ACROBOT import *
+from settings_CARTPOLE import *
+# from settings_ACROBOT import *
 # from settings_MOUNTAINCAR_DISC import *
-# from settings_CARTPOLE import *
 # from settings_PENDULUM import *
 
 class TRAIN_AGENT(torch.nn.Module):
@@ -109,7 +109,8 @@ class TRAIN_AGENT(torch.nn.Module):
         # add probs
         probabilities = optim_probabilities
         # add loss module
-        iwloss =  IW_WAKE()
+        iwloss =  IW_WAKE(trajectory_length, simulations, probabilities, normalize, rev_reward_shaping, buffer_update_type, \
+                            sample_reg, apply_filtering, trust_region_reg, approx_lagrange)
         # add model
         policy = self.set_policy()
         # optimization method
