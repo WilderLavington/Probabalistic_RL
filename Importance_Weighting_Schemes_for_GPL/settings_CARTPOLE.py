@@ -9,11 +9,11 @@ game = "CartPole-v0"
 # the total time that the agent will interact with the simulator
 trajectory_length = 200
 # describes the total samples that are gathered via interaction with the simulator per iteration
-sample_size = 25
+sample_size = 5
 # total number of training iterations for the algorithm
 iterations = 500
 # batch size considered at each training update
-batch_size = 25
+batch_size = 5
 # number of CPU proccesses to handle batches
 workers = 1
 
@@ -29,8 +29,6 @@ actions = 2 # env.action_space.n
 action_transform = lambda action: action.int()[0].numpy()
 
 """ THIS IS ALL THE INFO ABOUT IMPORTANCE WEIGHTING BASED GPS """
-# probability of optimality at each step
-optim_prob = 0.99
 # whether or not to use normalized importance weighting
 normalize = 1
 # set adaptive step where we add prob ahead of where agent has solved

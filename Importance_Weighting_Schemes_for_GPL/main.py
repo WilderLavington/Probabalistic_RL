@@ -78,6 +78,9 @@ def main():
     print("trajectory_length: %r" % args.trajectory_length)
     print("optim_prob: %r" % args.optim_prob)
 
+    """ GENERATE A DIRECTORY """
+    directory = create_data_storage(game)
+
     """ INITIALIZE AGENT TRAINING CLASS """
     algorithm = TRAIN_AGENT(args.task[0])
 
@@ -87,8 +90,7 @@ def main():
     """ TRAIN AGENT AND GENERATE INFO """
     policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
 
-    """ GENERATE A DIRECTORY AND STORE DATA THERE """
-    directory = create_data_storage(game)
+    """ STORE DATA IN THE DIRECTORY """
     torch.save(loss_per_iteration, 'loss__' +  directory + '.pt')
     torch.save(iw_per_iteration, 'iw__' + directory + '.pt')
     torch.save(iw_per_iteration, 'time__' + directory + '.pt')
