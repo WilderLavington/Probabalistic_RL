@@ -67,84 +67,6 @@ class IW_WAKE(torch.nn.Module):
         self.begin_buffer_updates = use
         return None
 
-    """ SAMPLE BASED APPROACH BASED UPON NORMALIZED REWARDS BETWEEN ALL TRAJECTORIES """
-    def update_buffer_RS(self, new_states, new_actions, new_rewards, new_optim, current_policy, fresh_buffer):
-        # set the current buffer size
-        buffer_size = self.buffer_size
-        # if the buffer is currently empty replace it sorted states
-        if not self.buffer_set:
-            # compute cumulative rewards through time for each sample
-            new_cum_rewards = torch.sum(new_rewards, dim=1)
-            # replace cumulative reward by probability
-            if len(new_cum_rewards) == 1:
-                prob_cum_rewards = torch.tensor([1.0])
-            else:
-                prob_cum_rewards = (new_cum_rewards - torch.min(new_cum_rewards) + self.sample_reg) / torch.sum(new_cum_rewards - torch.min(new_cum_rewards) + self.sample_reg)
-            # set Categorical distributions
-            buffer_distribution = Categorical(prob_cum_rewards[0])
-            samples = [buffer_distribution.sample() for i in range(self.buffer_size)]
-            # set old policy
-            self.old_policy = current_policy
-            # store info
-            self.buffer_states = new_states[torch.stack(samples),:,:]
-            self.buffer_action = new_actions[torch.stack(samples),:,:]
-            self.buffer_reward = new_rewards[torch.stack(samples),:,:]
-            self.buffer_optim = new_optim[torch.stack(samples),:]
-            self.buffer_set = True
-            self.current_buffer_size = self.buffer_size
-        else:
-            # set update the old policy
-            self.old_policy = current_policy
-            # do we want to throw away the old buffer and just sample from the new data
-            if fresh_buffer:
-                # combine it with the current buffer
-                self.buffer_states = new_states
-                self.buffer_action = new_actions
-                self.buffer_reward = new_rewards
-                self.buffer_optim = new_optim
-            else:
-                # combine it with the current buffer
-                self.buffer_states = torch.cat([new_states, self.buffer_states])
-                self.buffer_action = torch.cat([new_actions, self.buffer_action])
-                self.buffer_reward = torch.cat([new_rewards, self.buffer_reward])
-                self.buffer_optim = torch.cat([new_optim, self.buffer_optim])
-            # compute the new cumulative rewards
-            new_cum_rewards = torch.sum(self.buffer_reward, dim=1)
-            # replace cumulative reward by probability
-            if torch.sum(new_cum_rewards - torch.min(new_cum_rewards)) != 0:
-                prob_cum_rewards = (new_cum_rewards - torch.min(new_cum_rewards) + self.sample_reg) / torch.sum(new_cum_rewards - torch.min(new_cum_rewards) + self.sample_reg)
-                prob_cum_rewards = prob_cum_rewards.reshape(-1)
-            else:
-                prob_cum_rewards = torch.ones(new_cum_rewards.size()) / len(torch.ones(new_cum_rewards.size()))
-                prob_cum_rewards = prob_cum_rewards.reshape(-1)
-            # set Categorical distributions
-            buffer_distribution = Categorical(prob_cum_rewards)
-
-            samples = [buffer_distribution.sample() for i in range(self.buffer_size)]
-            # store info
-            self.buffer_states = self.buffer_states[torch.stack(samples),:,:]
-            self.buffer_action = self.buffer_action[torch.stack(samples),:,:]
-            self.buffer_reward = self.buffer_reward[torch.stack(samples),:,:]
-            self.buffer_optim = self.buffer_optim[torch.stack(samples),:]
-            self.buffer_set = True
-            self.current_buffer_size = self.buffer_size
-            # print info
-            print("Current Average Buffer Value: " + str(torch.mean(torch.sum(self.rev_reward_shaping(self.buffer_reward), dim=1))))
-            # print(len(self.buffer_weights))
-
-        """ COMPUTE AND STORE KL BETWEEN SAMPLING DISTRIBUTION AND POLICY """
-        if self.trust_region_reg == 1:
-            p = prob_cum_rewards[torch.stack(samples)]
-            flat_states = torch.flatten(self.buffer_states, start_dim=0,end_dim=1)
-            flat_actions = torch.flatten(self.buffer_action, start_dim=0,end_dim=1)
-            flat_opt = torch.flatten(self.buffer_optim, start_dim=0,end_dim=1)
-            log_p = torch.log(p + self.epsilon)
-            log_q = torch.sum(current_policy(flat_states, flat_actions, flat_opt).reshape(self.buffer_reward.size()).squeeze(2), dim=1)
-            self.KL = torch.sum(p*(log_p - log_q))
-
-        # return buffer info
-        return self.buffer_states, self.buffer_action, self.buffer_reward, self.buffer_optim, buffer_distribution
-
     """ SAMPLE BASED APPROACH FOLLOWING THE IMPORTANCE WEIGHTS OF THE ORIGNAL DISTRIBUTION """
     def update_buffer_IWS(self, new_states, new_actions, new_rewards, new_optim, fresh_buffer, current_policy, iw):
         # set the current buffer size
@@ -158,9 +80,7 @@ class IW_WAKE(torch.nn.Module):
                 prob_cum_rewards = iw / torch.sum(iw)
             # set Categorical distributions
             buffer_distribution = Categorical(prob_cum_rewards)
-            samples = [buffer_distribution.sample() for i in range(self.buffer_size)]
-            # set old policy
-            self.old_policy = current_policy
+            samples = torch.stack([buffer_distribution.sample() for i in range(self.buffer_size)])
             # store info
             self.buffer_states = new_states[samples,:,:]
             self.buffer_action = new_actions[samples,:,:]
@@ -170,8 +90,6 @@ class IW_WAKE(torch.nn.Module):
             self.buffer_set = True
             self.current_buffer_size = self.buffer_size
         else:
-            # set update the old policy
-            self.old_policy = current_policy
             # do we want to throw away the old buffer and just sample from the new data
             if fresh_buffer:
                 # combine it with the current buffer
@@ -191,7 +109,7 @@ class IW_WAKE(torch.nn.Module):
             prob_cum_rewards = iw / torch.sum(iw)
             # set Categorical distributions
             buffer_distribution = Categorical(prob_cum_rewards)
-            samples = [buffer_distribution.sample() for i in range(self.buffer_size)]
+            samples = torch.stack([buffer_distribution.sample() for i in range(self.buffer_size)])
             # store info
             self.buffer_states = self.buffer_states[samples,:,:]
             self.buffer_action = self.buffer_action[samples,:,:]
@@ -214,69 +132,18 @@ class IW_WAKE(torch.nn.Module):
             log_q = torch.sum(current_policy(flat_states, flat_actions, flat_opt).reshape(self.buffer_reward.size()).squeeze(2), dim=1)
             self.KL = torch.sum(p*(log_p - log_q))
 
-        # return buffer info
+        """ RETURN """
         return self.buffer_states, self.buffer_action, self.buffer_reward, self.buffer_optim, buffer_distribution
 
-    """ GREEDY BUFFER UPDATE TAKING THE N HIGHEST SCORING TRAJECTORIES """
-    def update_buffer_greedy(self, new_states, new_actions, new_rewards, new_optim, new_weights, current_policy):
-        # compute cumulative rewards through time for each sample
-        cum_rewards = torch.sum(new_rewards, dim=1)
-        max_samples = len(cum_rewards)
-        buffer_size = self.buffer_size
-        # sort by cumulative reward
-        _, idx = cum_rewards.sort()
-        # if the buffer is currently empty replace it sorted states
-        if not self.buffer_set:
-            # set old policy
-            self.old_policy = current_policy
-            # store info
-            self.buffer_states = torch.flatten(new_states[idx[:min(buffer_size, max_samples)],:,:], start_dim=0,end_dim=1)
-            self.buffer_action = torch.flatten(new_actions[idx[:min(buffer_size, max_samples)],:,:], start_dim=0,end_dim=1)
-            self.buffer_reward = torch.flatten(new_rewards[idx[:min(buffer_size, max_samples)],:,:], start_dim=0,end_dim=1)
-            self.buffer_optim = torch.flatten(new_optim[idx[:min(buffer_size, max_samples)],:], start_dim=0,end_dim=1)
-            self.buffer_weights = new_weights[idx[:min(buffer_size, max_samples)]].squeeze(1)
-            self.buffer_set = True
-            self.current_buffer_size = torch.tensor(min(buffer_size.numpy(), max_samples))
-        else:
-            # set update the old policy
-            self.old_policy = current_policy
-            # compute new info
-            buffer_states = torch.flatten(new_states[idx[:min(buffer_size, max_samples)],:,:], start_dim=0,end_dim=1)
-            buffer_action = torch.flatten(new_actions[idx[:min(buffer_size, max_samples)],:,:], start_dim=0,end_dim=1)
-            buffer_reward = torch.flatten(new_rewards[idx[:min(buffer_size, max_samples)],:,:], start_dim=0,end_dim=1)
-            buffer_optim = torch.flatten(new_optim[idx[:min(buffer_size, max_samples)],:], start_dim=0,end_dim=1)
-            buffer_weights = new_weights[idx[:min(buffer_size, max_samples)]]
-            # combine it with the current buffer
-            self.buffer_states = torch.cat([buffer_states, self.buffer_states])
-            self.buffer_action = torch.cat([buffer_action, self.buffer_action])
-            self.buffer_reward = torch.cat([buffer_reward, self.buffer_reward])
-            self.buffer_optim = torch.cat([buffer_optim, self.buffer_optim])
-            self.buffer_weights = torch.cat([buffer_weights.squeeze(1), self.buffer_weights])
-            # sort based on the cumulative rewards
-            cum_rewards = torch.sum(self.rev_reward_shaping(self.buffer_reward), dim=1)
-            max_samples = len(cum_rewards)
-            # sort by cumulative reward
-            idx = torch.argsort(cum_rewards,dim=0,descending=True)
-            # remove low performing trajectories
-            self.buffer_states = self.buffer_states[idx[0:min(buffer_size, max_samples)].reshape(-1),:,:]
-            self.buffer_action = self.buffer_action[idx[0:min(buffer_size, max_samples)].reshape(-1),:,:]
-            self.buffer_reward = self.buffer_reward[idx[0:min(buffer_size, max_samples)].reshape(-1),:,:]
-            self.buffer_optim = self.buffer_optim[idx[0:min(buffer_size, max_samples)].reshape(-1),:]
-            self.buffer_weights = self.buffer_weights[idx[0:min(buffer_size, max_samples)]].squeeze(1)
-            # set the current size of the buffer
-            self.current_buffer_size = torch.tensor(min(buffer_size.numpy(), max_samples))
-
-            print("Current Average Buffer Value: " + str(torch.mean(torch.sum(self.rev_reward_shaping(self.buffer_reward), dim=1))))
-            # print(len(self.buffer_weights))
-
-        # return buffer info
-        return self.buffer_states, self.buffer_action, self.buffer_reward, self.buffer_optim
 
     """ LOSS FUNCTION FOR REINFORCEMENT LEARNING AS IMPORTANCE WEIGHTED APPROXIMATE INFERENCE FOLLOWING KL(P||Q) """
     def forward(self, policy, state_tensor, action_tensor, reward_tensor, optimality_tensor):
 
         # compute total number of samples used in the update
+        """ COMPUTE ADDITION OF BUFFER INFO """
         total_samples = torch.tensor(1.0*reward_tensor.size()[0])
+        if self.old_policy == None:
+            self.old_policy = policy
 
         """ COMPUTE ADDITION OF BUFFER INFO """
         if self.include_buffer:
@@ -299,8 +166,6 @@ class IW_WAKE(torch.nn.Module):
             logOpt = opt_prob + subopt_prob
 
             """ OLD POLICY SCORE FUNCTION LOG Q_OLD(TAU|O) """
-            if self.old_policy == None:
-                self.old_policy = policy
             # convert format to something we can feed to model
             flat_states = torch.flatten(self.buffer_states, start_dim=0,end_dim=1)
             flat_actions = torch.flatten(self.buffer_action, start_dim=0,end_dim=1)
@@ -313,7 +178,7 @@ class IW_WAKE(torch.nn.Module):
             """ ADD FRANKS THING """
             # sum accross time
             buffer_sum_opt_scoreFxn = torch.sum(buffer_opt_scoreFxn, dim=1)
-            buffer_sum_opt_scoreFxn = torch.log(torch.exp(buffer_sum_opt_scoreFxn) + 1 / (self.current_buffer_size))
+            buffer_sum_opt_scoreFxn = torch.log(torch.exp(buffer_sum_opt_scoreFxn) + 1 / (self.buffer_size))
 
             """ COMPUTE BUFFER IMPORTANCE WEIGHTS """
             # sum through time to get the iw
@@ -334,8 +199,6 @@ class IW_WAKE(torch.nn.Module):
         flat_states = torch.flatten(state_tensor, start_dim=0,end_dim=1)
         flat_actions = torch.flatten(action_tensor, start_dim=0,end_dim=1)
         flat_opt = torch.flatten(optimality_tensor, start_dim=0,end_dim=1)
-        if self.old_policy == None:
-            self.old_policy = policy
         # compute the models score function
         flat_opt_scoreFxn = self.old_policy(flat_states, flat_actions, flat_opt)
         # reshapte this tensor to be time by samples
@@ -391,22 +254,19 @@ class IW_WAKE(torch.nn.Module):
             # compute exponential for the weights
             total_iw = torch.exp(total_iw)
 
-
         """ UPDATE BUFFER FOR FUTURE ITERATIONS """
         if self.begin_buffer_updates:
-            if self.buffer_update_type == 'sample':
-                self.update_buffer_RS(state_tensor, action_tensor, reward_tensor, optimality_tensor, policy, False)
-            elif self.buffer_update_type == 'sample_iw':
-                self.update_buffer_IWS(state_tensor, action_tensor, reward_tensor, optimality_tensor, False, policy, total_iw)
-            else:
-                self.update_buffer_greedy(state_tensor, action_tensor, reward_tensor, optimality_tensor, iw, policy)
+            self.update_buffer_IWS(state_tensor, action_tensor, reward_tensor, optimality_tensor, False, policy, total_iw)
 
         """ TRUST REGION REGULARIZATION """
-        if self.trust_region_reg == 1 and self.KL:
+        if self.trust_region_reg == 1:
             # keep policy close where it counts
             TRR = self.approx_lagrange * self.KL
         else:
             TRR = torch.tensor(0.)
+
+        """ UPDATE OLD POLICY """
+        self.old_policy = policy
 
         """ RETURN THE OBJECTIVE EVALUATION """
         return -1*torch.dot(total_iw, total_score) + TRR.detach(), torch.nonzero(total_iw).size(0), len(total_iw)

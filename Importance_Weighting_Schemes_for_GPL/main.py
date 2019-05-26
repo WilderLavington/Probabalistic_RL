@@ -44,7 +44,7 @@ def create_data_storage(game):
         print("Successfully created the directory %s " % path)
 
     """ CALL LINUX COMMAND TO STORE INFO IN .TXT"""
-    f = os.popen('date \n cat settings.py')
+    f = os.popen('date \n cat settings_CARTPOLE.py')
     now = f.read()
     file = open(path + "/parameter_info.txt","w")
     file.write(now)
