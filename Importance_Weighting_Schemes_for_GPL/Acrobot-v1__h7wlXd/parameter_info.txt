@@ -1,4 +1,4 @@
-Sun May 26 11:13:28 MDT 2019
+Sun May 26 21:01:25 MDT 2019
 
 """ THIS FILE CONTAINS THE SETTINGS USED IN THE IWS FOR RL: IN ORDER TO CHANGE
     MAKE ANY CHANGES TO HOW THE ALGORITHM RUNS, THESE PARAMETERS MUST BE
@@ -10,18 +10,18 @@ game = "CartPole-v0"
 # the total time that the agent will interact with the simulator
 trajectory_length = 200
 # describes the total samples that are gathered via interaction with the simulator per iteration
-sample_size = 5
+sample_size = 1
 # total number of training iterations for the algorithm
 iterations = 500
 # batch size considered at each training update
-batch_size = 5
+batch_size = 1
 # number of CPU proccesses to handle batches
 workers = 1
 
 """ ENVIROMENT SPECIFIC INFORMATION """
 # reward shaping
-reward_shaping = lambda r: 5*r - 6
-inv_reward_shaping = lambda r: (r + 6) / 5
+reward_shaping = lambda r: 9*r - 10
+inv_reward_shaping = lambda r: (r + 10) / 9
 # get state and action dimensions from enviroment
 action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
 state_size = 4 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
@@ -39,7 +39,7 @@ adaptive_step = 25
 # whether or not to include buffer in training updates
 include_buffer = 1
 # total size of the buffer used for the update (has to be float)
-buffer_size = 250
+buffer_size = 500
 # type up update within buffer
 buffer_update_type = 'sample_iw'
 # amount of regularization in sampling scheme for sample based buffer updates
@@ -48,7 +48,6 @@ sample_reg = 0.0
 trust_region_reg = 0
 # the approximate lagrange multiplier term to use
 approx_lagrange = 0.01
-
 
 """ THIS IS ALL THE INFO ABOUT THE AGENT MODEL USED """
 # size of hidden layer

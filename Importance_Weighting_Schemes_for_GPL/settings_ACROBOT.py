@@ -5,22 +5,22 @@
 
 """ BASIC ENVIROMENT INFO  """
 # the game enviroment that the agent will interact with
-game = 'CARTPOLE'
+game = 'Acrobot-v1'
 # the total time that the agent will interact with the simulator
-trajectory_length = 200
+trajectory_length = 300
 # describes the total samples that are gathered via interaction with the simulator per iteration
-sample_size = 1
+sample_size = 50
 # total number of training iterations for the algorithm
 iterations = 500
 # batch size considered at each training update
-batch_size = 1
+batch_size = 50
 # number of CPU proccesses to handle batches
 workers = 1
 
 """ ENVIROMENT SPECIFIC INFORMATION """
 # reward shaping
-reward_shaping = lambda r: r
-inv_reward_shaping = lambda r: r
+reward_shaping = lambda r: 5*r - 1
+inv_reward_shaping = lambda r: (r + 1) / 5
 # get state and action dimensions from enviroment
 action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
 state_size = 6 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
@@ -58,7 +58,7 @@ agent_model = 'DISCRETE'
 # this represents the chosen optimization method used
 optimize = 'Adam'
 # this is the stepsize for the chosen optimization method
-lr = 5e-4
+lr = 5e-2
 # this is the weight regularization for the parameters
 weight_decay = 0.0
 # this is the first order averaging term in Adam

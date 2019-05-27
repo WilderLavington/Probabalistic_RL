@@ -68,40 +68,14 @@ class GAME_SAMPLES(torch.nn.Module):
                 self.rewards_batch[sample,t,0] = self.reward_shaping(torch.tensor(reward))
                 # check done flag for
                 if done:
+
                     # pass the enviroment on to handle_completion
                     self.handle_completion(t, sample, policy, optimality_tensor)
                     # reset enviroment
                     observation = self.env.reset()
                     break
+            # reset enviroment if no end
+            observation = self.env.reset()
 
-        # return game samples
-        return self.states_batch, self.actions_batch, self.rewards_batch
-
-    """ SAMPLE FROM GAME UNDER ENVIROMENT AND POLICY """
-    def sample_game_seq(self, env, trained_policy, optimality_tensor):
-
-        # initialize enviroment
-        current_state = self.env.reset()
-        policy = lambda state, optim: trained_policy.sample_action(state, optim)
-        # iterate over samples
-        for sample in range(self.sample_size):
-            # iterate through full trajectories
-            for t in range(self.trajectory_length):
-                # set the current state and action
-                self.states_batch[sample,t,:] = torch.tensor(current_state)
-                self.actions_batch[sample,t,:] = policy(self.states_batch[sample,t,:], optimality_tensor[sample,:])
-                # update stacked
-                action = self.actions_batch[sample,t,:].int()[0].numpy()
-                # take a step in the enviroment
-                current_state, reward, done, info = self.env.step(action)
-                # add the reward
-                self.rewards_batch[sample,t,0] = self.reward_shaping(torch.tensor(reward))
-                # check done flag for
-                if done:
-                    # pass the enviroment on to handle_completion
-                    self.handle_completion(t,sample)
-                    # reset enviroment
-                    observation = self.env.reset()
-                    break
         # return game samples
         return self.states_batch, self.actions_batch, self.rewards_batch
