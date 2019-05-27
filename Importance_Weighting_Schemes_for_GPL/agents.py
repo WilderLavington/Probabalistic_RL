@@ -175,21 +175,21 @@ class RWS_DISCRETE_TWISTED_POLICY(torch.nn.Module):
 
     def sample_action(self, state, optim):
         # Forward pass on probability of current variable
-        input = torch.cat([torch.FloatTensor(state), torch.FloatTensor([optim])])
-        probabilities = self.linear1(input)
-        probabilities = F.relu(probabilities)
-        probabilities = self.linear2(probabilities)
-        probabilities = F.relu(probabilities)
-        probabilities = self.linear3(probabilities)
-        pos_prob = self.softmax(probabilities)
+        input_1 = torch.cat([torch.FloatTensor(state), torch.FloatTensor([optim])])
+        pos = self.linear1(input_1)
+        pos = F.relu(pos)
+        pos = self.linear2(pos)
+        pos = F.relu(pos)
+        pos = self.linear3(pos)
+        pos_prob = self.softmax(pos)
         # now we consider the probability
-        input = torch.cat([torch.FloatTensor(state), torch.FloatTensor([1-optim])])
-        probabilities = self.linear1(input)
-        probabilities = F.relu(probabilities)
-        probabilities = self.linear2(probabilities)
-        probabilities = F.relu(probabilities)
-        probabilities = self.linear3(probabilities)
-        neg_prob = self.softmax(probabilities)
+        input_2 = torch.cat([torch.FloatTensor(state), torch.FloatTensor([1-optim])])
+        neg = self.linear1(input_2)
+        neg = F.relu(neg)
+        neg = self.linear2(neg)
+        neg = F.relu(neg)
+        neg = self.linear3(neg)
+        neg_prob = self.softmax(neg)
         # compute the custom softmax function
         weights = pos_prob*(1-neg_prob)
         new_softmax = weights / torch.sum(weights)
@@ -254,6 +254,7 @@ class SEQ_DISCRETE_POLICY(torch.nn.Module):
         probabilities = self.linear2(probabilities)
         probabilities = F.relu(probabilities)
         probabilities = self.linear3(probabilities)
+        probabilities = F.relu(probabilities)
         probabilities = self.softmax(probabilities)
         # action
         action = self.dist(probabilities).sample()
@@ -268,6 +269,7 @@ class SEQ_DISCRETE_POLICY(torch.nn.Module):
         probabilities = self.linear2(probabilities)
         probabilities = F.relu(probabilities)
         probabilities = self.linear3(probabilities)
+        probabilities = F.relu(probabilities)
         probabilities = self.softmax(probabilities)
         # logprob
         log_prob = self.dist(probabilities).log_prob(action)
@@ -282,6 +284,7 @@ class SEQ_DISCRETE_POLICY(torch.nn.Module):
         probabilities = self.linear2(probabilities)
         probabilities = F.relu(probabilities)
         probabilities = self.linear3(probabilities)
+        probabilities = F.relu(probabilities)
         output = self.outputstacked(probabilities)
         # return log probability of an action
         return torch.log(torch.gather(output, 1, action))

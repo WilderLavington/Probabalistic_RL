@@ -76,7 +76,7 @@ class TRAIN_AGENT(torch.nn.Module):
 
         """ SET THE NUERAL NETWORK MODEL USED FOR THE CURRENT PROBLEM """
         if agent_model == 'DISCRETE':
-            return RWS_DISCRETE_POLICY(state_size, actions, trajectory_length)
+            return RWS_DISCRETE_POLICY(state_size, actions, trajectory_length, hidden_layer_size)
         elif agent_model == 'CONTINUOUS':
             return RWS_CONTINUOUS_POLICY(state_size, actions, trajectory_length)
         elif agent_model == 'DISCRETE_TWISTED':
