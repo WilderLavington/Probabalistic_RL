@@ -79,9 +79,9 @@ class TRAIN_AGENT(torch.nn.Module):
             return RWS_DISCRETE_POLICY(state_size, actions, trajectory_length)
         elif agent_model == 'CONTINUOUS':
             return RWS_CONTINUOUS_POLICY(state_size, actions, trajectory_length)
-        elif agent_model == 'CONTINUOUS_TWISTED':
-            return RWS_DISCRETE_TWISTED_POLICY(state_size, actions, trajectory_length)
         elif agent_model == 'DISCRETE_TWISTED':
+            return RWS_DISCRETE_TWISTED_POLICY(state_size, actions, trajectory_length)
+        elif agent_model == 'CONTINUOUS_TWISTED':
             return RWS_CONTINUOUS_TWISTED_POLICY(state_size, actions, trajectory_length)
         else:
             print("error: brah.")

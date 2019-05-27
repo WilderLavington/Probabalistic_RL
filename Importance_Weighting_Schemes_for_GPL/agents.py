@@ -147,13 +147,13 @@ class RWS_CONT_POLICY(torch.nn.Module):
         # return it
         return log_prob
 
-class TWISTED_DISCRETE_POLICY(torch.nn.Module):
+class RWS_DISCRETE_TWISTED_POLICY(torch.nn.Module):
     """
     POLICY CLASS: CONTAINS ALL USABLE FUNCTIONAL FORMS FOR THE AGENTS POLICY, ALONG WITH
     THE CORROSPONDING HELPER FUNCTIONS
     """
     def __init__(self, state_size, actions, optimality_input, hidden_layer = 128):
-        super(TWISTED_DISCRETE_POLICY, self).__init__()
+        super(RWS_DISCRETE_TWISTED_POLICY, self).__init__()
         # initializations
         self.state_size = state_size
         self.optimality_input = optimality_input
