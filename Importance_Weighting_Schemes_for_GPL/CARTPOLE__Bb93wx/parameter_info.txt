@@ -1,3 +1,4 @@
+Sun May 26 12:06:18 MDT 2019
 
 """ THIS FILE CONTAINS THE SETTINGS USED IN THE IWS FOR RL: IN ORDER TO CHANGE
     MAKE ANY CHANGES TO HOW THE ALGORITHM RUNS, THESE PARAMETERS MUST BE
@@ -5,7 +6,7 @@
 
 """ BASIC ENVIROMENT INFO  """
 # the game enviroment that the agent will interact with
-game = 'CARTPOLE'
+game = "CartPole-v0"
 # the total time that the agent will interact with the simulator
 trajectory_length = 200
 # describes the total samples that are gathered via interaction with the simulator per iteration
@@ -19,12 +20,12 @@ workers = 1
 
 """ ENVIROMENT SPECIFIC INFORMATION """
 # reward shaping
-reward_shaping = lambda r: r
-inv_reward_shaping = lambda r: r
+reward_shaping = lambda r: 9*r - 10
+inv_reward_shaping = lambda r: (r + 10) / 9
 # get state and action dimensions from enviroment
 action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
-state_size = 6 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
-actions = 3 # env.action_space.n
+state_size = 4 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
+actions = 2 # env.action_space.n
 # must convert to numpy for openai gym
 action_transform = lambda action: action.int()[0].numpy()
 

@@ -9,11 +9,11 @@ game = "CartPole-v0"
 # the total time that the agent will interact with the simulator
 trajectory_length = 200
 # describes the total samples that are gathered via interaction with the simulator per iteration
-sample_size = 5
+sample_size = 1
 # total number of training iterations for the algorithm
 iterations = 500
 # batch size considered at each training update
-batch_size = 5
+batch_size = 1
 # number of CPU proccesses to handle batches
 workers = 1
 
@@ -38,7 +38,7 @@ adaptive_step = 25
 # whether or not to include buffer in training updates
 include_buffer = 1
 # total size of the buffer used for the update (has to be float)
-buffer_size = 5
+buffer_size = 500
 # type up update within buffer
 buffer_update_type = 'sample_iw'
 # amount of regularization in sampling scheme for sample based buffer updates
@@ -47,7 +47,6 @@ sample_reg = 0.0
 trust_region_reg = 0
 # the approximate lagrange multiplier term to use
 approx_lagrange = 0.01
-
 
 """ THIS IS ALL THE INFO ABOUT THE AGENT MODEL USED """
 # size of hidden layer
