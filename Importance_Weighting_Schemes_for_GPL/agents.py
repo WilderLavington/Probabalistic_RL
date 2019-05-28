@@ -35,8 +35,10 @@ class RWS_DISCRETE_POLICY(torch.nn.Module):
         self.linear2 = torch.nn.Linear(hidden_layer, hidden_layer)
         # 3 hidden layer
         self.linear3 = torch.nn.Linear(hidden_layer, hidden_layer)
+        # 3 hidden layer
+        self.linear4 = torch.nn.Linear(hidden_layer, hidden_layer)
         # 4 hidden softmax layer
-        self.linear4 = torch.nn.Linear(hidden_layer, actions)
+        self.linear5 = torch.nn.Linear(hidden_layer, actions)
         # output
         self.softmax = torch.nn.Softmax(dim=0)
         # add a stacked output for vector calc
@@ -55,6 +57,8 @@ class RWS_DISCRETE_POLICY(torch.nn.Module):
         probabilities = self.linear3(probabilities)
         probabilities = F.relu(probabilities)
         probabilities = self.linear4(probabilities)
+        probabilities = F.relu(probabilities)
+        probabilities = self.linear5(probabilities)
         probabilities = self.softmax(probabilities)
         # action
         action = self.dist(probabilities).sample()
@@ -71,6 +75,8 @@ class RWS_DISCRETE_POLICY(torch.nn.Module):
         probabilities = self.linear3(probabilities)
         probabilities = F.relu(probabilities)
         probabilities = self.linear4(probabilities)
+        probabilities = F.relu(probabilities)
+        probabilities = self.linear5(probabilities)
         output = self.outputstacked(probabilities)
         # return log probability of an action
         return torch.log(torch.gather(output, 1, action) + self.epsilon)
