@@ -42,3 +42,45 @@ class PG_LOSS(torch.nn.Module):
         expectation = torch.dot(A_hat.reshape(-1),logliklihood_tensor.reshape(-1))/self.trajectory_length
         """ RETURN """
         return expectation/self.simulations
+
+class TRPO_LOSS(torch.nn.Module):
+
+    """ TRUST REGION POLICY OPTIMIZATION LOSS FUNCTION """
+    def __init__(self, trajectory_length, simulations, max_ent = 0, TRPO = 0, PPO = 0, beta = None):
+        """ INITIALIZATIONS """
+        super(TRPO_LOSS, self).__init__()
+        # initialize basic parameters
+        self.simulations = simulations
+        self.trajectory_length = trajectory_length
+        self.max_ent = max_ent
+
+    def KL_div(self, flat_states, flat_actions, policy, old_policy):
+        p = torch.exp(old_policy(flat_states,flat_actions))
+        log_p = old_policy(flat_states,flat_actions)
+        log_q = policy(flat_states,flat_actions)
+        return torch.sum(p * (log_p - log_q))
+
+    def forward(self, policy, state_tensor, action_tensor, reward_tensor, \
+                        cumulative_rollout):
+        return None
+
+class PPO_LOSS(torch.nn.Module):
+
+    """ TRUST REGION POLICY OPTIMIZATION LOSS FUNCTION """
+    def __init__(self, trajectory_length, simulations, max_ent = 0, TRPO = 0, PPO = 0, beta = None):
+        """ INITIALIZATIONS """
+        super(PPO_LOSS, self).__init__()
+        # initialize basic parameters
+        self.simulations = simulations
+        self.trajectory_length = trajectory_length
+        self.max_ent = max_ent
+
+    def KL_div(self, flat_states, flat_actions, policy, old_policy):
+        p = torch.exp(old_policy(flat_states,flat_actions))
+        log_p = old_policy(flat_states,flat_actions)
+        log_q = policy(flat_states,flat_actions)
+        return torch.sum(p * (log_p - log_q))
+
+    def forward(self, policy, state_tensor, action_tensor, reward_tensor, \
+                        cumulative_rollout):
+        return None

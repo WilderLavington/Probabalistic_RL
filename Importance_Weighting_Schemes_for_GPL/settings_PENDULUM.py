@@ -19,8 +19,8 @@ workers = 1
 
 """ ENVIROMENT SPECIFIC INFORMATION """
 # reward shaping
-reward_shaping = lambda r: r
-inv_reward_shaping = lambda r: r
+reward_shaping = lambda r: r/2
+inv_reward_shaping = lambda r: 2*r
 # get state and action dimensions from enviroment
 action_size = 1 # [len(env.action_space.sample()) if hasattr(env.action_space.sample(), "__len__") else 1][0]
 state_size = 3 #[len(env.reset()) if hasattr(env.reset(), "__len__") else 1][0]
