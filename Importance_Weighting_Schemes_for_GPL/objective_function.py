@@ -254,6 +254,19 @@ class IW_WAKE(torch.nn.Module):
             # compute exponential for the weights
             total_iw = torch.exp(total_iw)
 
+        """ CHECK WE ARE USING THE EFFECTIVE SAMPLE SIZE """
+        n_e = torch.sum(total_iw) ** 2 / torch.sum(total_iw ** 2)
+        # if not increase sample size by 1 upto 750
+        if self.buffer_size:
+            print("Effective sample size maintained: " + str(n_e.numpy() < len(total_iw) and 1 < n_e.numpy()))
+            print("Current buffer size: " + str(self.buffer_size))
+            if not n_e.numpy() < len(total_iw) and 1 < n_e.numpy():
+                if self.buffer_size <= 250:
+                    self.buffer_size += 1
+            else:
+                if self.buffer_size > 50:
+                    self.buffer_size -= 1
+
         """ UPDATE BUFFER FOR FUTURE ITERATIONS """
         if self.begin_buffer_updates:
             self.update_buffer_IWS(state_tensor, action_tensor, reward_tensor, optimality_tensor, False, policy, total_iw)

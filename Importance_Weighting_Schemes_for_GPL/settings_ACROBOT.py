@@ -38,7 +38,7 @@ adaptive_step = 25
 # whether or not to include buffer in training updates
 include_buffer = 1
 # total size of the buffer used for the update (has to be float)
-buffer_size = 600
+buffer_size = 150
 # type up update within buffer
 buffer_update_type = 'sample_iw'
 # amount of regularization in sampling scheme for sample based buffer updates
@@ -58,7 +58,7 @@ agent_model = 'DISCRETE'
 # this represents the chosen optimization method used
 optimize = 'Adam'
 # this is the stepsize for the chosen optimization method
-lr = 5e-2
+lr = 5e-4
 # this is the weight regularization for the parameters
 weight_decay = 0.0
 # this is the first order averaging term in Adam
