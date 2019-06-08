@@ -21,12 +21,7 @@ from game_enviroments import *
 from agents import *
 from objective_function import *
 from NaturalGrad import *
-
-""" SET GAME TYPE VIA IMPORT SETTINGS """
-# from settings_CARTPOLE import *
-from settings_ACROBOT import *
-# from settings_MOUNTAINCAR_DISC import *
-# from settings_PENDULUM import *
+from rl_variable_imports import *
 
 class TRAIN_AGENT(torch.nn.Module):
 

@@ -28,6 +28,8 @@ from game_enviroments import *
 from objective_function import *
 from train_agent import *
 from agents import *
+from rl_variable_imports.py import *
+
 
 """ PROGRAM TO CREATE FOLDER AND TEXT FILE TO STORE AND DESCRIBE DATA
     THAT WAS GENERATED DURING AN EXPERIMENT. """
@@ -68,13 +70,12 @@ def main():
     # define command line options
     CLI=argparse.ArgumentParser()
     # chosen enviroment
-    CLI.add_argument("--task", nargs="*", type=str, default=["CartPole-v0"])
     CLI.add_argument("--trajectory_length", nargs="*", type=int, default=[200])
     CLI.add_argument("--optim_prob", nargs="*", type=float, default=[1.0])
     # parse command line arguments
     args = CLI.parse_args()
     # print general training info
-    print("task: %r" % args.task)
+    print("task: %r" % game)
     print("trajectory_length: %r" % args.trajectory_length)
     print("optim_prob: %r" % args.optim_prob)
 
@@ -82,7 +83,7 @@ def main():
     directory = create_data_storage(game)
 
     """ INITIALIZE AGENT TRAINING CLASS """
-    algorithm = TRAIN_AGENT(args.task[0])
+    algorithm = TRAIN_AGENT(game)
 
     """ SET OPTIM PROBABILITIES """
     optim_probabilities = args.optim_prob[0]*torch.ones((args.trajectory_length[0]))

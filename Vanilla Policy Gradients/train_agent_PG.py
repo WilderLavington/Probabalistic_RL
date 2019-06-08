@@ -22,7 +22,7 @@ from agents import *
 from objective_function import *
 
 
-class PG_CARTPOLE(torch.nn.Module):
+class TRAIN_AGENT(torch.nn.Module):
 
     def __init__(self, task, iterations, sample_size, trajectory_length, batch_size, num_workers, adam_params):
         super(PG_CARTPOLE, self).__init__()

@@ -22,7 +22,7 @@ class RWS_DISCRETE_POLICY(torch.nn.Module):
     POLICY CLASS: CONTAINS ALL USABLE FUNCTIONAL FORMS FOR THE AGENTS POLICY, ALONG WITH
     THE CORROSPONDING HELPER FUNCTIONS
     """
-    def __init__(self, state_size, actions, optimality_input, hidden_layer = 128):
+    def __init__(self, state_size, actions, optimality_input, hidden_layer = 64):
         super(RWS_DISCRETE_POLICY, self).__init__()
         # initializations
         self.state_size = state_size
