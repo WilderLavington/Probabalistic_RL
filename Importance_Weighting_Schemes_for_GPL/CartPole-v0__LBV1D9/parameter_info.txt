@@ -1,3 +1,4 @@
+Sat Jun  8 12:54:16 PDT 2019
 
 """ THIS FILE CONTAINS THE SETTINGS USED IN THE IWS FOR RL: IN ORDER TO CHANGE
     MAKE ANY CHANGES TO HOW THE ALGORITHM RUNS, THESE PARAMETERS MUST BE
@@ -31,8 +32,6 @@ action_transform = lambda action: action.int()[0].numpy()
 """ THIS IS ALL THE INFO ABOUT IMPORTANCE WEIGHTING BASED GPS """
 # whether or not to use normalized importance weighting
 normalize = 1
-# this says what percentage of variables should be sub-optimal per trajectory
-optim_prob = 0.98
 # set adaptive step where we add prob ahead of where agent has solved
 set_adaptive = 0
 # number of steps ahead of current solve to set to one
