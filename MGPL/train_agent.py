@@ -18,9 +18,11 @@ from torch.distributions.bernoulli import Bernoulli as bern
 
 """ IMPORT PROGRAMS """
 from game_enviroments import *
-from agents import *
 from objective_function import *
-from NaturalGrad import *
+from train_agent import *
+from agent_models import *
+from transition_dyna_models import *
+from gen_reward_models import *
 from rl_variable_imports import *
 
 class TRAIN_AGENT(torch.nn.Module):

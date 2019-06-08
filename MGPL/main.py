@@ -27,7 +27,9 @@ from train_agent import *
 from game_enviroments import *
 from objective_function import *
 from train_agent import *
-from agents import *
+from agent_models import *
+from transition_dyna_models import *
+from gen_reward_models import *
 from rl_variable_imports import *
 
 

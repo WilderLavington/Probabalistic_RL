@@ -10,3 +10,4 @@ this file will hopefully contain:
 5. A2C (multi-proccess actor critic)
 6. IMPALA (importance weighted multi-proccess actor critic)
 7. Trust Region Policy Optimization (TRPO)
+8. Deep Deterministic Policy Gradients DDPG
