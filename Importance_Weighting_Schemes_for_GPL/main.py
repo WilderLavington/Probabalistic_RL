@@ -28,7 +28,7 @@ from game_enviroments import *
 from objective_function import *
 from train_agent import *
 from agents import *
-from rl_variable_imports.py import *
+from rl_variable_imports import *
 
 
 """ PROGRAM TO CREATE FOLDER AND TEXT FILE TO STORE AND DESCRIBE DATA
