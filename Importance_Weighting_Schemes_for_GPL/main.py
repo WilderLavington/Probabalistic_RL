@@ -66,19 +66,6 @@ def main():
         4. MOUNTAIN-CAR DISCRETE
     """
 
-    """ COMMAND LINE ARGUMENTS """
-    # define command line options
-    CLI=argparse.ArgumentParser()
-    # chosen enviroment
-    CLI.add_argument("--trajectory_length", nargs="*", type=int, default=[200])
-    CLI.add_argument("--optim_prob", nargs="*", type=float, default=[1.0])
-    # parse command line arguments
-    args = CLI.parse_args()
-    # print general training info
-    print("task: %r" % game)
-    print("trajectory_length: %r" % args.trajectory_length)
-    print("optim_prob: %r" % args.optim_prob)
-
     """ GENERATE A DIRECTORY """
     directory = create_data_storage(game)
 
@@ -86,7 +73,7 @@ def main():
     algorithm = TRAIN_AGENT(game)
 
     """ SET OPTIM PROBABILITIES """
-    optim_probabilities = args.optim_prob[0]*torch.ones((args.trajectory_length[0]))
+    optim_probabilities = optim_prob*torch.ones((trajectory_length))
 
     """ TRAIN AGENT AND GENERATE INFO """
     policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
