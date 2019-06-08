@@ -19,7 +19,7 @@ class IW_WAKE(torch.nn.Module):
 
     """ POLICY GRADIENTS LOSS FUNCTION """
     def __init__(self, trajectory_length, simulations, probabilities, normalize, rev_reward_shaping, buffer_update_type, \
-                sample_reg, trust_region_reg, approx_lagrange):
+                sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count):
         """ INITIALIZATIONS """
         super(IW_WAKE, self).__init__()
         self.simulations = simulations
@@ -27,7 +27,12 @@ class IW_WAKE(torch.nn.Module):
         self.probabilities = probabilities
         self.action_size = 2
         self.epsilon = 0.0000001
+        # simple normalized importance sampling
         self.normalize = normalize
+        # if we want to normalize using an exponential moving average
+        self.use_running_avg = use_running_avg
+        self.running_avg_norm = running_avg_norm
+        self.running_avg_count = running_avg_count
         # buffer replay info
         self.buffer_size = 0
         self.current_buffer_size = 0
@@ -135,7 +140,6 @@ class IW_WAKE(torch.nn.Module):
         """ RETURN """
         return self.buffer_states, self.buffer_action, self.buffer_reward, self.buffer_optim, buffer_distribution
 
-
     """ LOSS FUNCTION FOR REINFORCEMENT LEARNING AS IMPORTANCE WEIGHTED APPROXIMATE INFERENCE FOLLOWING KL(P||Q) """
     def forward(self, policy, state_tensor, action_tensor, reward_tensor, optimality_tensor):
 
@@ -239,15 +243,26 @@ class IW_WAKE(torch.nn.Module):
             total_iw = iw
             total_score = sum_opt_scoreFxn
 
-        """ CHECK IF WE ARE GOING TO NORMALIZE """
+        """ CHECK IF WE ARE GOING TO NORMALIZE IN SOME WAY """
         # if we want to normalize
         if self.normalize == 1:
+                # stabalize numerically
+                total_iw -= torch.max(total_iw)
+                # detach from computation graph
+                total_iw = total_iw.detach()
+                # compute exponential for the weights
+                total_iw = torch.exp(total_iw) / torch.sum(torch.exp(total_iw))
+        # if we want to use a running average to numerically stabalize
+        elif self.use_running_avg:
+            # compute exponential moving average
+            self.running_avg_norm = self.running_avg_norm + (torch.max(total_iw) - self.running_avg_norm) / self.running_avg_count
             # stabalize numerically
-            total_iw -= torch.max(total_iw)
+            total_iw -= self.running_avg_norm
             # detach from computation graph
             total_iw = total_iw.detach()
             # compute exponential for the weights
-            total_iw = torch.exp(total_iw) / torch.sum(torch.exp(total_iw))
+            total_iw = torch.exp(total_iw)
+            self.running_avg_count += 1
         else:
             # detach from computation graph
             total_iw = iw.detach()

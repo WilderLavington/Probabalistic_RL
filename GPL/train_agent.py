@@ -105,7 +105,7 @@ class TRAIN_AGENT(torch.nn.Module):
         probabilities = optim_probabilities
         # add loss module
         iwloss =  IW_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
-                            sample_reg, trust_region_reg, approx_lagrange)
+                            sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count)
         # add model
         policy = self.set_policy()
         # optimization method
