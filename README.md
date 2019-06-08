@@ -11,3 +11,4 @@ this file will hopefully contain:
 6. IMPALA (importance weighted multi-proccess actor critic)
 7. Trust Region Policy Optimization (TRPO)
 8. Deep Deterministic Policy Gradients DDPG
+9. Twin Delayed Deep Deterministic Policy Gradient (TD3)

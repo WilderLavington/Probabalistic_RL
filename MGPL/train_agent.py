@@ -47,23 +47,23 @@ class TRAIN_AGENT(torch.nn.Module):
         # return
         return optimality_tensor
 
-    def set_optimizer(self, policy):
+    def set_optimizer(self, model):
 
         """ INITIALIZE CHOSEN OPTIMIZER """
         if optimize == "Adam":
-            optimizer = torch.optim.Adam(policy.parameters(), lr = lr, betas = (beta_1, beta_2),
+            optimizer = torch.optim.Adam(model.parameters(), lr = lr, betas = (beta_1, beta_2),
                     weight_decay = weight_decay)
             return optimizer
         elif optimize == "ASGD":
-            optimizer = torch.optim.ASGD(policy.parameters(), lr = lr, lambd=lambd, alpha = alpha,
+            optimizer = torch.optim.ASGD(model.parameters(), lr = lr, lambd=lambd, alpha = alpha,
                     weight_decay = weight_decay)
             return optimizer
         elif optimize == "SGD":
-            optimizer = torch.optim.SGD(policy.parameters(), lr = lr, lambd = lambd, alpha = alpha,
+            optimizer = torch.optim.SGD(model.parameters(), lr = lr, lambd = lambd, alpha = alpha,
                     weight_decay = weight_decay)
             return optimizer
         elif optimize == "NaturalGrad":
-            optimizer = NaturalGrad(policy.parameters(), lr = lr, decay = lambd, L2reg = weight_decay)
+            optimizer = NaturalGrad(model.parameters(), lr = lr, decay = lambd, L2reg = weight_decay)
             return optimizer
         else:
             print("optim not supported sorry.")
@@ -71,7 +71,7 @@ class TRAIN_AGENT(torch.nn.Module):
 
     def set_policy(self):
 
-        """ SET THE NUERAL NETWORK MODEL USED FOR THE CURRENT PROBLEM """
+        """ SET THE NUERAL NETWORK AGENT MODEL USED FOR THE CURRENT PROBLEM """
         if agent_model == 'DISCRETE':
             return RWS_DISCRETE_POLICY(state_size, actions, trajectory_length, hidden_layer_size)
         elif agent_model == 'CONTINUOUS':
@@ -80,6 +80,26 @@ class TRAIN_AGENT(torch.nn.Module):
             return RWS_DISCRETE_TWISTED_POLICY(state_size, actions, trajectory_length)
         elif agent_model == 'CONTINUOUS_TWISTED':
             return RWS_CONTINUOUS_TWISTED_POLICY(state_size, actions, trajectory_length)
+        else:
+            print("error: brah.")
+
+    def set_dyna_model(self):
+
+        """ SET THE NUERAL NETWORK DYNAMICS MODEL USED FOR THE CURRENT PROBLEM """
+        if agent_model == 'DISCRETE':
+            return TRANSITION_DYNAMICS_MODEL_DESC(state_size, actions, trajectory_length, hidden_layer_size)
+        elif agent_model == 'CONTINUOUS':
+            return TRANSITION_DYNAMICS_MODEL_CONT(state_size, actions, trajectory_length)
+        else:
+            print("error: brah.")
+
+    def set_reward_model(self):
+
+        """ SET THE NUERAL NETWORK DYNAMICS MODEL USED FOR THE CURRENT PROBLEM """
+        if agent_model == 'DISCRETE':
+            return TRANSITION_REWARD_MODEL_DESC(state_size, actions, trajectory_length, hidden_layer_size)
+        elif agent_model == 'CONTINUOUS':
+            return TRANSITION_REWARD_MODEL_CONT(state_size, actions, trajectory_length)
         else:
             print("error: brah.")
 
@@ -102,16 +122,21 @@ class TRAIN_AGENT(torch.nn.Module):
         # time for project info
         begining = time.time()
 
-        """ INITIALIZE OBJECTIVE, POLICY, AND OPTIMIZER """
+        """ INITIALIZE OBJECTIVE, POLICY, GENERATIVE MODELS, AND OPTIMIZER """
         # add probs
         probabilities = optim_probabilities
         # add loss module
         iwloss =  IW_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
                             sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count)
-        # add model
+        # add models
         policy = self.set_policy()
-        # optimization method
-        optimizer = self.set_optimizer(policy)
+        dyna_model = self.set_dyna_model()
+        reward_model = self.set_reward_model()
+
+        # optimization method for parameters
+        optimizer_infNet = self.set_optimizer(policy)
+        optimizer_genRewardNet = self.set_optimizer(reward_model)
+        optimizer_genDynaNet = self.set_optimizer(dyna_model)
 
         """ SET BUFFER UPDATE SO WE START STORING OLD SAMPLES """
         if include_buffer == 1:
@@ -139,12 +164,28 @@ class TRAIN_AGENT(torch.nn.Module):
             # set average to so current expectation
             exp_iw = 0
             counter = 0
-            # update model on gpu following mini-batches
+            # update model following mini-batches
             for r, (state_batch, action_batch, reward_batch, optim_batch) in enumerate(data_loader):
+
+                """ WAKE PHASE - THETA UPDATE """
+
+                """ SLEEP PHASE - PHI UPDATE """
+                # generate fake data using the generative model
+                gen_state_batch, gen_action_batch, gen_reward_batch, gen_optim_batch = model_based_simulator(policy, dyna_model, reward_model, optim)
+                # now apply the update as usual
+                loss, nonzero_iw, samples = iwloss(policy, state_batch, action_batch, reward_batch, optim_batch)
+                # zero the parameter gradients
+                optimizer_infNet.zero_grad()
+                # backprop through computation graph
+                loss.backward()
+                # step optimizer
+                optimizer.step()
+
+                """ WAKE PHASE - PHI UPDATE """
                 # compute loss
                 loss, nonzero_iw, samples = iwloss(policy, state_batch, action_batch, reward_batch, optim_batch)
                 # zero the parameter gradients
-                optimizer.zero_grad()
+                optimizer_infNet.zero_grad()
                 # backprop through computation graph
                 loss.backward()
                 # step optimizer
