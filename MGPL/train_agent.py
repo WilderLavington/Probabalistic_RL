@@ -126,8 +126,11 @@ class TRAIN_AGENT(torch.nn.Module):
         # add probs
         probabilities = optim_probabilities
         # add loss module
-        iwloss =  IW_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
+        iwloss =  THETA_WAKE()
+        genModelloss = PHI_SLEEP()
+        genModelloss = PHI_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
                             sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count)
+
         # add models
         policy = self.set_policy()
         dyna_model = self.set_dyna_model()
@@ -168,6 +171,14 @@ class TRAIN_AGENT(torch.nn.Module):
             for r, (state_batch, action_batch, reward_batch, optim_batch) in enumerate(data_loader):
 
                 """ WAKE PHASE - THETA UPDATE """
+                # now apply the update as usual
+                loss, nonzero_iw, samples = genModelloss(policy, state_batch, action_batch, reward_batch, optim_batch)
+                # zero the parameter gradients
+                optimizer_infNet.zero_grad()
+                # backprop through computation graph
+                loss.backward()
+                # step optimizer
+                optimizer.step()
 
                 """ SLEEP PHASE - PHI UPDATE """
                 # generate fake data using the generative model
