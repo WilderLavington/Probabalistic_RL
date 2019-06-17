@@ -23,7 +23,7 @@ import torch.distributed as dist
     TO THE TRUE DYNAMICS OF THE SYSTEM.  I OPTED TO SPLIT UP THE MODEL THAT
     PRODUCES THE NEXT STATE AND REWARD SO THAT I COULD PERFORM GUIDED LEARNING.
     THE FILE IS SPLIT UP INTO TWO MODELS BASED UPON WHETHER THE STATE SPACE IS
-    CONTINUOUS OR DISCRETE. 
+    CONTINUOUS OR DISCRETE.
 """
 
 class TRANSITION_DYNAMICS_MODEL_DESC(torch.nn.Module):
@@ -73,7 +73,7 @@ class TRANSITION_DYNAMICS_MODEL_DESC(torch.nn.Module):
         action = self.dist(probabilities).sample()
         return action
 
-    def forward(self, state, action, optim):
+    def forward(self, pre_state, pre_action, current_state, optim):
         # squash state and optimality stuff togather
         input = torch.cat([torch.FloatTensor(state), torch.FloatTensor(optim)],1)
         # Here is the forward pass
