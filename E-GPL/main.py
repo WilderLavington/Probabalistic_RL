@@ -73,7 +73,7 @@ def main():
     algorithm = TRAIN_AGENT(game)
 
     """ TRAIN AGENT AND GENERATE INFO """
-    policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
+    policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task()
 
     """ STORE DATA IN THE DIRECTORY """
     torch.save(loss_per_iteration, directory + '/' + 'loss__' +  directory + '.pt')
