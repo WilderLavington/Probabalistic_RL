@@ -27,9 +27,7 @@ from train_agent import *
 from game_enviroments import *
 from objective_function import *
 from train_agent import *
-from agent_models import *
-from transition_dyna_models import *
-from gen_reward_models import *
+from agents import *
 from rl_variable_imports import *
 
 
@@ -74,9 +72,6 @@ def main():
     """ INITIALIZE AGENT TRAINING CLASS """
     algorithm = TRAIN_AGENT(game)
 
-    """ SET OPTIM PROBABILITIES """
-    optim_probabilities = optim_prob*torch.ones((trajectory_length))
-
     """ TRAIN AGENT AND GENERATE INFO """
     policy, loss_per_iteration, time_per_iteration, iw_per_iteration = algorithm.train_gym_task(optim_probabilities)
 
@@ -88,26 +83,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-"""
-step 1. initialize policy
-        this policy will conform to the following structure:
-        a. it will take in a state, and an optimality variable
-        b. it will produce an action, as well as the expected reward for that
-        action. This will be considered "internal reward" value
-step 2. initialize generative model
-        this model will produce a sequence of tuples of the the following form:
-        a. it will take in the previous state, (this could be the initial state
-        or anything else), as well as the action of the agent
-        b. it will produce the next state, as well as the associated reward for
-        for that state. This reward will be considered the "true reward" values
-note 1. the internal reward is trained in such a way as to optimize the agents
-        learning and exploration per iteration while the true reward is learned
-        to match the rewards produced by interaction with the actual enviroment
-step 3. formulation of the model
-        the inference model is described in the following way:
-        q(tau|O) = pdf(current action, internal rewards | current state, current optimality)
-        p(tau,O) = pdf(current state, current action, true reward, current optimality | previous state)
-
-"""
