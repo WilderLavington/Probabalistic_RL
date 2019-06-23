@@ -318,11 +318,10 @@ class PHI_SLEEP(torch.nn.Module):
     def __init__(self, trajectory_length, simulations, probabilities, normalize, rev_reward_shaping, buffer_update_type, \
                 sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count):
         """ INITIALIZATIONS """
-        super(PHI_SLEEP, self).__init__()
+        super(PHI_WAKE, self).__init__()
         self.simulations = simulations
         self.trajectory_length = trajectory_length
         self.probabilities = probabilities
-        self.action_size = 2
         self.epsilon = 0.0000001
         # simple normalized importance sampling
         self.normalize = normalize
@@ -596,12 +595,12 @@ class PHI_SLEEP(torch.nn.Module):
         """ RETURN THE OBJECTIVE EVALUATION """
         return -1*torch.dot(total_iw, total_score) + TRR.detach(), torch.nonzero(total_iw).size(0), len(total_iw)
 
-class THETA_WAKE(torch.nn.Module):
+class THETA_WAKE_DYNA(torch.nn.Module):
 
     """
         REWEIGHTED WAKE SLEEP ALGORITHM: GENERATIVE NETWORK WAKE PHASE.
         IN THIS STAGE WE STEP THE GENERATIVE MODELS OF THE ENVIRMENT
-        DYNAMICS AND REWARD MODELS. 
+        DYNAMICS AND REWARD MODELS.
     """
     def __init__(self, trajectory_length, simulations, probabilities, normalize, rev_reward_shaping):
         """ INITIALIZATIONS """
@@ -615,7 +614,7 @@ class THETA_WAKE(torch.nn.Module):
         # simple normalized importance sampling
         self.normalize = normalize
 
-    def forward(self, policy, state_tensor, action_tensor, reward_tensor, optimality_tensor):
+    def forward(self, dyno_model, state_tensor, action_tensor, reward_tensor, optimality_tensor):
 
         """ OLD POLICY SCORE FUNCTION LOG Q_OLD(TAU|O) """
         # convert format to something we can feed to model
@@ -697,3 +696,62 @@ class THETA_WAKE(torch.nn.Module):
 
         """ RETURN THE OBJECTIVE EVALUATION """
         return -1*torch.dot(total_iw, total_score) + TRR.detach(), torch.nonzero(total_iw).size(0), len(total_iw)
+
+class THETA_WAKE_REWARD(torch.nn.Module):
+
+    """
+        REWEIGHTED WAKE SLEEP ALGORITHM: GENERATIVE NETWORK WAKE PHASE.
+        IN THIS STAGE WE STEP THE GENERATIVE MODELS OF THE ENVIRMENT
+        DYNAMICS AND REWARD MODELS.
+    """
+
+    def __init__(self, trajectory_length, simulations, probabilities, normalize, rev_reward_shaping):
+        """ INITIALIZATIONS """
+        super(THETA_WAKE_REWARD, self).__init__()
+        # general init info
+        self.simulations = simulations
+        self.trajectory_length = trajectory_length
+        self.probabilities = probabilities
+        self.action_size = 2
+        self.epsilon = 0.0000001
+        # simple normalized importance sampling
+        self.normalize = normalize
+        # store the previous model for MAP estimation
+        self.old_model = None
+
+    def KL_divergence(old_model, new_model, C_states, N_states, C_actions):
+        # compute element wise values for the KL
+        KL = torch.exp(old_model(C_states, N_states, C_actions)) * (new_model(C_states, N_states, C_actions) - old_model(C_states, N_states, C_actions))
+        # sum and return to get the total divergence
+        return torch.sum(KL)
+
+    def forward(self, dyno_model, state_tensor, action_tensor, reward_tensor, optimality_tensor):
+
+        """ FLATTEN THE TRAJECTORIES -> S_T+1, S_T, A_T """
+        # get dimention info
+        samples, trajectory_length, _ = state_tensor.size()
+        # convert format to something we can feed to model
+        flat_current_states = torch.flatten(state_tensor[:, 0:trajectory_length-1,:], start_dim=0,end_dim=1)
+        flat_current_actions = torch.flatten(action_tensor[:, 0:trajectory_length-1,:], start_dim=0,end_dim=1)
+        flat_next_states = torch.flatten(state_tensor[:, 1:trajectory_length,:], start_dim=0,end_dim=1)
+
+        """ APPLY MAXIMUM LIKELIHOOD ESTIMATION """
+        # compute logliklihood of the model
+        flat_scoreFxn = dyno_model(flat_current_states, flat_current_actions, flat_next_states)
+        # sum over all instances
+        log_liklihood = torch.sum(flat_scoreFxn)
+
+        """ INCLUDE PRIOR OVER PARAMETERS CENTERED AT PREVIOUS ITERATION """
+        # check that we have an old model to start with
+        if self.old_model == None:
+            # if we dont, just set the current
+            self.old_model = dyno_model
+        # In this case we will just regularize following the KL divergence
+        log_prior  = KL_divergence(old_model, new_model, flat_current_states, flat_next_states, flat_current_actions)
+
+        """ UPDATE THE OLD MODEL FOR THE NEXT ITERATION"""
+        # this way it will be available later 
+        self.old_model = dyno_model
+
+        """ RETURN NEGATIVE LOGLIKLIHOOD WITH PRIOR """
+        return -1*(log_liklihood + log_prior)
