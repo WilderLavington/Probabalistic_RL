@@ -613,91 +613,49 @@ class THETA_WAKE_DYNA(torch.nn.Module):
         self.epsilon = 0.0000001
         # simple normalized importance sampling
         self.normalize = normalize
+        # store the previous model for MAP estimation
+        self.old_model = None
 
-    def forward(self, dyno_model, state_tensor, action_tensor, reward_tensor, optimality_tensor):
+    def KL_divergence(old_model, new_model, C_states, N_states, C_actions, R_rewards):
+        # compute element wise values for the KL
+        KL = torch.exp(old_model(C_states, C_actions, N_states, R_rewards)) * \
+            (new_model(C_states, C_actions, N_states, R_rewards) - old_model(C_states, C_actions, N_states, R_rewards))
+        # sum and return to get the total divergence
+        return torch.sum(KL)
 
-        """ OLD POLICY SCORE FUNCTION LOG Q_OLD(TAU|O) """
+    def forward(self, reward_model, state_tensor, action_tensor, reward_tensor, optimality_tensor):
+
+        """ FLATTEN THE TRAJECTORIES -> S_T+1, S_T, A_T """
+        # get dimention info
+        samples, trajectory_length, _ = state_tensor.size()
         # convert format to something we can feed to model
-        flat_states = torch.flatten(state_tensor, start_dim=0,end_dim=1)
-        flat_actions = torch.flatten(action_tensor, start_dim=0,end_dim=1)
-        flat_opt = torch.flatten(optimality_tensor, start_dim=0,end_dim=1)
-        # compute the models score function
-        flat_opt_scoreFxn = self.old_policy(flat_states, flat_actions, flat_opt)
-        # reshapte this tensor to be time by samples
-        opt_scoreFxn = flat_opt_scoreFxn.reshape(reward_tensor.size()).squeeze(2)
-        # sum accross time
-        sum_opt_scoreFxn = torch.sum(opt_scoreFxn, dim=1)
+        flat_current_states = torch.flatten(state_tensor[:, 0:trajectory_length-1,:], start_dim=0,end_dim=1)
+        flat_current_actions = torch.flatten(action_tensor[:, 0:trajectory_length-1,:], start_dim=0,end_dim=1)
+        flat_next_states = torch.flatten(state_tensor[:, 1:trajectory_length,:], start_dim=0,end_dim=1)
+        flat_resulting_reward = torch.flatten(reward_tensor[:, 1:trajectory_length,:], start_dim=0,end_dim=1)
 
-        """ USE OPTIMALITY VARIABLES AS INDICATORS + COMPUTE LOG LOG P(TAU,O) """
-        subopt_reward = torch.log(1 - torch.exp(reward_tensor) + self.epsilon)
-        sub_opt_mat = torch.sum((1-optimality_tensor.squeeze(2)) * subopt_reward.squeeze(2), dim=1)
-        opt_mat = torch.sum((optimality_tensor.squeeze(2)) * reward_tensor.squeeze(2), dim=1)
-        log_joint = sub_opt_mat + opt_mat
+        """ APPLY MAXIMUM LIKELIHOOD ESTIMATION """
+        # compute logliklihood of the model
+        flat_scoreFxn = reward_model(flat_current_states, flat_current_actions, flat_next_states, flat_resulting_reward)
+        # sum over all instances
+        log_liklihood = torch.sum(flat_scoreFxn)
 
-        """ USE OPTIMALITY VARIABLES AS INDICATORS + COMPUTE LOG P(O) """
-        opt_prob = torch.mv((optimality_tensor.squeeze(2)), torch.log(self.probabilities + self.epsilon) )
-        subopt_prob = torch.mv((1.-optimality_tensor.squeeze(2)), torch.log(1 - self.probabilities + self.epsilon))
-        logOpt = opt_prob + subopt_prob
+        """ INCLUDE PRIOR OVER PARAMETERS CENTERED AT PREVIOUS ITERATION """
+        # check that we have an old model to start with
+        if self.old_model == None:
+            # if we dont, just set the current
+            self.old_model = reward_model
+        # In this case we will just regularize following the KL divergence
+        log_prior  = KL_divergence(old_model, reward_model, flat_current_states, flat_next_states, flat_current_actions, flat_resulting_reward)
 
-        """ COMPUTE BUFFER IMPORTANCE WEIGHTS """
-        # sum through time to get the iw
-        iw = log_joint.reshape(-1) - sum_opt_scoreFxn.reshape(-1) - logOpt
-        # regularize by average sample mean
-        iw -= torch.log(total_samples)
+        """ UPDATE THE OLD MODEL FOR THE NEXT ITERATION"""
+        # this way it will be available later
+        self.old_model = reward_model
 
-        """ CURRENT POLICY SCORE FUNCTION LOG Q_PHI(TAU|O) """
-        # compute the models score function
-        flat_buffer_opt_scoreFxn = policy(flat_states, flat_actions, flat_opt)
-        # reshapte this tensor to be time by samples
-        opt_scoreFxn = flat_opt_scoreFxn.reshape(reward_tensor.size()).squeeze(2)
-        # sum accross time
-        sum_opt_scoreFxn = torch.sum(opt_scoreFxn, dim=1)
+        """ RETURN NEGATIVE LOGLIKLIHOOD WITH PRIOR """
+        return -1*(log_liklihood + log_prior)
 
-        """ CHECK IF WE ARE GOING TO NORMALIZE IN SOME WAY """
-        if self.normalize == 1:
-                # stabalize numerically
-                total_iw -= torch.max(total_iw)
-                # detach from computation graph
-                total_iw = total_iw.detach()
-                # compute exponential for the weights
-                total_iw = torch.exp(total_iw) / torch.sum(torch.exp(total_iw))
-        else:
-            # detach from computation graph
-            total_iw = iw.detach()
-            # compute exponential for the weights
-            total_iw = torch.exp(total_iw)
-
-        """ CHECK WE ARE USING THE EFFECTIVE SAMPLE SIZE """
-        n_e = torch.sum(total_iw) ** 2 / torch.sum(total_iw ** 2)
-        # if not increase sample size by 1 upto 750
-        if self.buffer_size:
-            print("Effective sample size maintained: " + str(n_e.numpy() < len(total_iw) and 1 < n_e.numpy()))
-            print("Current buffer size: " + str(self.buffer_size))
-            if (n_e.numpy() < len(total_iw) and 1 < n_e.numpy()):
-                if self.buffer_size > 50:
-                    self.buffer_size -= 1
-            else:
-                if int(self.buffer_size) <= 725:
-                    self.buffer_size += 25
-
-        """ UPDATE BUFFER FOR FUTURE ITERATIONS """
-        if self.begin_buffer_updates:
-            self.update_buffer_IWS(state_tensor, action_tensor, reward_tensor, optimality_tensor, False, policy, total_iw)
-
-        """ TRUST REGION REGULARIZATION """
-        if self.trust_region_reg == 1:
-            # keep policy close where it counts
-            TRR = self.approx_lagrange * self.KL
-        else:
-            TRR = torch.tensor(0.)
-
-        """ UPDATE OLD POLICY """
-        self.old_policy = policy
-
-        """ RETURN THE OBJECTIVE EVALUATION """
-        return -1*torch.dot(total_iw, total_score) + TRR.detach(), torch.nonzero(total_iw).size(0), len(total_iw)
-
-class THETA_WAKE_REWARD(torch.nn.Module):
+class THETA_WAKE_DYNA(torch.nn.Module):
 
     """
         REWEIGHTED WAKE SLEEP ALGORITHM: GENERATIVE NETWORK WAKE PHASE.
@@ -721,7 +679,8 @@ class THETA_WAKE_REWARD(torch.nn.Module):
 
     def KL_divergence(old_model, new_model, C_states, N_states, C_actions):
         # compute element wise values for the KL
-        KL = torch.exp(old_model(C_states, N_states, C_actions)) * (new_model(C_states, N_states, C_actions) - old_model(C_states, N_states, C_actions))
+        KL = torch.exp(old_model(C_states, C_actions, N_states)) * \
+            (new_model(C_states, C_actions, N_states) - old_model(C_states, C_actions, N_states))
         # sum and return to get the total divergence
         return torch.sum(KL)
 
@@ -747,10 +706,10 @@ class THETA_WAKE_REWARD(torch.nn.Module):
             # if we dont, just set the current
             self.old_model = dyno_model
         # In this case we will just regularize following the KL divergence
-        log_prior  = KL_divergence(old_model, new_model, flat_current_states, flat_next_states, flat_current_actions)
+        log_prior  = KL_divergence(old_model, dyno_model, flat_current_states, flat_next_states, flat_current_actions)
 
         """ UPDATE THE OLD MODEL FOR THE NEXT ITERATION"""
-        # this way it will be available later 
+        # this way it will be available later
         self.old_model = dyno_model
 
         """ RETURN NEGATIVE LOGLIKLIHOOD WITH PRIOR """
