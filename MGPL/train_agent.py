@@ -122,20 +122,25 @@ class TRAIN_AGENT(torch.nn.Module):
         # time for project info
         begining = time.time()
 
-        """ INITIALIZE OBJECTIVE, POLICY, GENERATIVE MODELS, AND OPTIMIZER """
+        """ INITIALIZE OBJECTIVE FOR DYNAMICS MODEL, REWARD MODEL, AND INFERENCE NETWORK """
         # add probs
         probabilities = optim_probabilities
-        # add loss module
-        iwloss =  THETA_WAKE()
-        genModelloss = PHI_SLEEP()
-        genModelloss = PHI_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
+        # add loss module (generative models)
+        GenRewardloss =  THETA_WAKE_REWARD()
+        GenDynaloss =  THETA_WAKE_DYNA()
+        # inference models - need two bc of replay buffer
+        InfSleeploss = PHI_SLEEP(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
+                            sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count)
+        InfWakeloss = PHI_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
                             sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count)
 
+        """ INITIALIZE MODEL FOR DYNAMICS MODEL, REWARD MODEL, AND INFERENCE NETWORK """
         # add models
         policy = self.set_policy()
         dyna_model = self.set_dyna_model()
         reward_model = self.set_reward_model()
 
+        """ INITIALIZE OPTIMIZER FOR DYNAMICS MODEL, REWARD MODEL, AND INFERENCE NETWORK """
         # optimization method for parameters
         optimizer_infNet = self.set_optimizer(policy)
         optimizer_genRewardNet = self.set_optimizer(reward_model)
@@ -170,11 +175,21 @@ class TRAIN_AGENT(torch.nn.Module):
             # update model following mini-batches
             for r, (state_batch, action_batch, reward_batch, optim_batch) in enumerate(data_loader):
 
-                """ WAKE PHASE - THETA UPDATE """
+                """ WAKE PHASE - THETA UPDATE - REWARD UPDATE """
                 # now apply the update as usual
-                loss, nonzero_iw, samples = genModelloss(policy, state_batch, action_batch, reward_batch, optim_batch)
+                loss = GenRewardloss(reward_model, state_batch, action_batch, reward_batch, optim_batch)
                 # zero the parameter gradients
-                optimizer_infNet.zero_grad()
+                optimizer_genRewardNet.zero_grad()
+                # backprop through computation graph
+                loss.backward()
+                # step optimizer
+                optimizer.step()
+
+                """ WAKE PHASE - THETA UPDATE - DYNAMICS UPDATE """
+                # now apply the update as usual
+                loss = GenDynaloss(dyna_model, state_batch, action_batch, reward_batch, optim_batch)
+                # zero the parameter gradients
+                optimizer_genDynaNet.zero_grad()
                 # backprop through computation graph
                 loss.backward()
                 # step optimizer
@@ -184,7 +199,7 @@ class TRAIN_AGENT(torch.nn.Module):
                 # generate fake data using the generative model
                 gen_state_batch, gen_action_batch, gen_reward_batch, gen_optim_batch = model_based_simulator(policy, dyna_model, reward_model, optim)
                 # now apply the update as usual
-                loss, nonzero_iw, samples = iwloss(policy, state_batch, action_batch, reward_batch, optim_batch)
+                loss, nonzero_iw, samples = InfSleeploss(policy, state_batch, action_batch, reward_batch, optim_batch)
                 # zero the parameter gradients
                 optimizer_infNet.zero_grad()
                 # backprop through computation graph
@@ -194,7 +209,7 @@ class TRAIN_AGENT(torch.nn.Module):
 
                 """ WAKE PHASE - PHI UPDATE """
                 # compute loss
-                loss, nonzero_iw, samples = iwloss(policy, state_batch, action_batch, reward_batch, optim_batch)
+                loss, nonzero_iw, samples = InfWakeloss(policy, state_batch, action_batch, reward_batch, optim_batch)
                 # zero the parameter gradients
                 optimizer_infNet.zero_grad()
                 # backprop through computation graph
