@@ -316,9 +316,9 @@ class PHI_SLEEP(torch.nn.Module):
     """
 
     def __init__(self, trajectory_length, simulations, probabilities, normalize, rev_reward_shaping, \
-                sample_reg, trust_region_reg, approx_lagrange):
+                trust_region_reg, approx_lagrange):
         """ INITIALIZATIONS """
-        super(PHI_WAKE, self).__init__()
+        super(PHI_SLEEP, self).__init__()
         self.simulations = simulations
         self.trajectory_length = trajectory_length
         self.probabilities = probabilities
@@ -418,14 +418,14 @@ class PHI_SLEEP(torch.nn.Module):
         """ RETURN THE OBJECTIVE EVALUATION """
         return -1*torch.dot(total_iw, total_score) + TRR.detach(), torch.nonzero(total_iw).size(0), len(total_iw)
 
-class THETA_WAKE_DYNA(torch.nn.Module):
+class THETA_WAKE_REWARD(torch.nn.Module):
 
     """
         REWEIGHTED WAKE SLEEP ALGORITHM: GENERATIVE NETWORK WAKE PHASE.
         IN THIS STAGE WE STEP THE GENERATIVE MODELS OF THE ENVIRMENT
         DYNAMICS AND REWARD MODELS.
     """
-    def __init__(self,):
+    def __init__(self):
         """ INITIALIZATIONS """
         super(THETA_WAKE_REWARD, self).__init__()
         # general init info
@@ -482,7 +482,7 @@ class THETA_WAKE_DYNA(torch.nn.Module):
 
     def __init__(self):
         """ INITIALIZATIONS """
-        super(THETA_WAKE_REWARD, self).__init__()
+        super(THETA_WAKE_DYNA, self).__init__()
         # to stabalize
         self.epsilon = 0.0000001
         # store the previous model for MAP estimation

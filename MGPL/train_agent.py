@@ -129,8 +129,8 @@ class TRAIN_AGENT(torch.nn.Module):
         GenRewardloss =  THETA_WAKE_REWARD()
         GenDynaloss =  THETA_WAKE_DYNA()
         # inference models - need two bc of replay buffer
-        InfSleeploss = PHI_SLEEP(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
-                            sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count)
+        InfSleeploss = PHI_SLEEP(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, \
+                                trust_region_reg, approx_lagrange)
         InfWakeloss = PHI_WAKE(trajectory_length, batch_size, probabilities, normalize, inv_reward_shaping, buffer_update_type, \
                             sample_reg, trust_region_reg, approx_lagrange, use_running_avg, running_avg_norm, running_avg_count)
 
@@ -248,5 +248,3 @@ class TRAIN_AGENT(torch.nn.Module):
         """ RETURN """
         # return the trained policy and the loss per iteration
         return policy, loss_per_iteration, time_per_iteration, nonzeroiw_per_iteration
-
-    
