@@ -23,12 +23,13 @@ class SIMPLE_WAKE(torch.nn.Module):
         # this for later just in case I want some global varaibles
         self.init = True
 
-    def forward(self, K, T, optim_tensor, state_tensor, action_tensor, reward_tensor, policy):
+    def forward(self, optim_tensor, state_tensor, action_tensor, reward_tensor, policy):
 
         # initialize score function for each of these objects
         opt_scoreFxn = lambda state, action, optim: policy.logprob_action(state, action, optim)
         expectation = torch.tensor(0.)
-
+        print(optim_tensor.size())
+        K, T, dim = optim_tensor.size()
         # compute un-normalized weights
         for i in range(K):
             # iterate through time to get scaling
@@ -40,7 +41,7 @@ class SIMPLE_WAKE(torch.nn.Module):
         expectation /= K
         # now just return the sum of these terms multipled by each other
         return -1*expectation
-        
+
 class IW_WAKE(torch.nn.Module):
 
     """ POLICY GRADIENTS LOSS FUNCTION """

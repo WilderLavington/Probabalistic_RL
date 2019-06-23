@@ -104,19 +104,13 @@ class TRAIN_AGENT(torch.nn.Module):
 
         """ INITIALIZE OBJECTIVE, POLICY, AND OPTIMIZER """
         # add probs
-        probabilities = torch.ones((self.trajectory_length))
+        probabilities = torch.ones((trajectory_length))
         # add loss module
         iwloss =  SIMPLE_WAKE()
         # add model
         policy = self.set_policy()
         # optimization method
         optimizer = self.set_optimizer(policy)
-
-        """ SET BUFFER UPDATE SO WE START STORING OLD SAMPLES """
-        if include_buffer == 1:
-            # set the buffer to be used
-            iwloss.set_buffer_size(buffer_size)
-            iwloss.start_buffer_updates(True)
 
         """ TRAIN AGENT """
         for iter in range(iterations):
@@ -125,10 +119,10 @@ class TRAIN_AGENT(torch.nn.Module):
             # time for project info
             start = time.time()
             # get new batch of trajectories from simulator
-            state_total, action_total, reward_total = game.sample_game(env, policy, torch.ones(trajectory_length))
+            state_total, action_total, reward_total = game.sample_game(env, policy, torch.ones(sample_size, trajectory_length))
 
             """ SAMPLE OPTIMALITY VARIABLES USING SELF NORMALIZED IMPORTANCE WEIGHTING """
-            optim = self.optimality(rewards)
+            optim = self.optimality(reward_total.reshape(-1))
 
             """ RUN MULTIPLE UPDATES ON GPU USING MINI-BATCHES """
             # initialize pytorch dataset for efficient data loading
@@ -140,8 +134,8 @@ class TRAIN_AGENT(torch.nn.Module):
             counter = 0
             # update model on gpu following mini-batches
             for r, (state_batch, action_batch, reward_batch, optim_batch) in enumerate(data_loader):
-                # compute loss
-                loss, nonzero_iw, samples = iwloss(policy, state_batch, action_batch, reward_batch, optim_batch)
+                # compute loss optim_tensor, state_tensor, action_tensor, reward_tensor, policy
+                loss, nonzero_iw, samples = iwloss(optim_batch, state_batch, action_batch, reward_batch, policy)
                 # zero the parameter gradients
                 optimizer.zero_grad()
                 # backprop through computation graph
