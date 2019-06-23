@@ -153,7 +153,7 @@ class NN_TRANSITION_DYNAMICS_MODEL_CONT(torch.nn.Module):
 
     def forward(self, state, action, next_state):
         # input
-        input = torch.cat([torch.FloatTensor(state), torch.FloatTensor(action)],1)
+        input = torch.cat([torch.FloatTensor(state), torch.FloatTensor(action)])
         # first layer
         probabilities = self.linear1(input)
         probabilities = F.relu(probabilities)
@@ -162,17 +162,26 @@ class NN_TRANSITION_DYNAMICS_MODEL_CONT(torch.nn.Module):
         probabilities = F.relu(probabilities)
         # third layer
         probabilities = self.linear3(probabilities)
-        probabilities = self.tanh(probabilities)
+        probabilities = self.relu(probabilities)
+        # fourth layer
+        probabilities = self.linear4(probabilities)
+        probabilities = self.relu(probabilities)
         # output to give parameters
-        parameters = self.output(probabilities)
-        # use reparameterization trick to generate all the log_probs
-        mean = torch.max(torch.min(torch.tensor(2.0), parameters[:,0]), -torch.tensor(2.0))
-        variance =  torch.min(torch.ones(torch.mul(parameters[:,1], parameters[:,1]).size()), torch.mul(parameters[:,1], parameters[:,1])) + 0.01
-        # compute log prob explicitly
-        expval = next_state.reshape(-1).float() - mean
-        log_prob = -1 * torch.sum(expval * expval) / (2*variance) - 0.5 * torch.log(2 * 3.141592653 * variance)
+        params = self.output(probabilities)
+        # parameterize model
+        mean = params[0:self.state_size]
+        # parameterize cholesky fac
+        L = self.upper_triag(params[self.state_size:]) + \
+                        # additional cheese parameter for degeneracy
+                        self.epsilon*torch.eye(self.state_size)
+        # compute the actual covariance matrix used
+        cov = torch.mm(L, L.t())
+        # set MVT
+        mvn = MultivariateNormal(mean, cov)
+        # sample the next state
+        log_prob_next = mvn.log_prob(next_state)
         # return it
-        return log_prob
+        return log_prob_next
 
 class DDP_TRANSITION_DYNAMICS_MODEL_DISC(torch.nn.Module):
 
