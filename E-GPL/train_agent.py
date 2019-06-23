@@ -122,50 +122,38 @@ class TRAIN_AGENT(torch.nn.Module):
             state_total, action_total, reward_total = game.sample_game(env, policy, torch.ones(sample_size, trajectory_length))
 
             """ SAMPLE OPTIMALITY VARIABLES USING SELF NORMALIZED IMPORTANCE WEIGHTING """
-            optim = self.optimality(reward_total.reshape(-1))
+            optim = self.optimality(reward_total.squeeze(2))
 
             """ RUN MULTIPLE UPDATES ON GPU USING MINI-BATCHES """
             # initialize pytorch dataset for efficient data loading
             data = torch.utils.data.TensorDataset(state_total, action_total.long(), reward_total, optim)
             # set data loader
             data_loader = torch.utils.data.DataLoader(data, batch_size=batch_size, shuffle=True, num_workers=workers)
-            # set average to so current expectation
-            exp_iw = 0
-            counter = 0
+
             # update model on gpu following mini-batches
             for r, (state_batch, action_batch, reward_batch, optim_batch) in enumerate(data_loader):
                 # compute loss optim_tensor, state_tensor, action_tensor, reward_tensor, policy
-                loss, nonzero_iw, samples = iwloss(optim_batch, state_batch, action_batch, reward_batch, policy)
+                loss = iwloss(optim_batch, state_batch, action_batch, reward_batch, policy)
                 # zero the parameter gradients
                 optimizer.zero_grad()
                 # backprop through computation graph
                 loss.backward()
                 # step optimizer
                 optimizer.step()
-                # update the importance weights
-                exp_iw += nonzero_iw
-                counter += 1
 
             """ RE-RUN EXPERIMENTS UNDER OPTIMALITY TO SEE HOW WE ARE DOING """
             _, _, reward_total = game.sample_game(env, policy, torch.ones(optim.size()))
             exp = torch.sum(torch.sum(inv_reward_shaping(reward_total),1)/sample_size)
-
-            """ START USING REPLAY BUFFER NOW THAT WE HAVE SAMPLES """
-            if include_buffer:
-                # set the buffer to be used
-                iwloss.use_buffer(True)
 
             """ UPDATE DATA STORAGE """
             # update time
             end = time.time()
             time_per_iteration[iter] = end - start
             loss_per_iteration[iter] = exp
-            nonzeroiw_per_iteration[iter] = exp_iw / counter
 
             """ PRINT STATEMENTS """
             if iter % floor((iterations+1)/100) == 0:
                 print("Expected Sum of rewards: " + str(exp))
-                print("Average number of non-zero importance weights: " + str(exp_iw / counter) + " Out of " + str(samples))
                 print("Loss: " + str(loss))
                 print('Time per Iteration: ' + str(end - start) + ' at iteration: ' + str(iter))
                 print('Time elapsed: ' + str((end - begining)/60) + ' minutes.')

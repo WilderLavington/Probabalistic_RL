@@ -25,17 +25,19 @@ class SIMPLE_WAKE(torch.nn.Module):
 
     def forward(self, optim_tensor, state_tensor, action_tensor, reward_tensor, policy):
 
-        # initialize score function for each of these objects
-        opt_scoreFxn = lambda state, action, optim: policy.logprob_action(state, action, optim)
-        expectation = torch.tensor(0.)
-        print(optim_tensor.size())
-        K, T, dim = optim_tensor.size()
-        # compute un-normalized weights
-        for i in range(K):
-            # iterate through time to get scaling
-            for t in range(T):
-                # just evaluate score function under our samples
-                expectation += opt_scoreFxn(state_tensor[:,t,i], action_tensor[t,i], optim_tensor[:,i])
+        # convert format to something we can feed to model
+        flat_states = torch.flatten(state_tensor, start_dim=0,end_dim=1)
+        flat_actions = torch.flatten(action_tensor, start_dim=0,end_dim=1)
+        flat_opt = torch.flatten(optim_tensor, start_dim=0,end_dim=1)
+
+        # compute the models score function
+        flat_buffer_opt_scoreFxn = policy(flat_states, flat_actions, flat_opt)
+
+        # get dimentions
+        T, K = flat_buffer_opt_scoreFxn.size()
+
+        # sum everything up
+        expectation = torch.sum(flat_buffer_opt_scoreFxn).unsqueeze(0)
 
         # now average
         expectation /= K
