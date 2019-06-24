@@ -185,6 +185,25 @@ class NN_TRANSITION_DYNAMICS_MODEL_CONT(torch.nn.Module):
 
 class DDP_TRANSITION_DYNAMICS_MODEL_DISC(torch.nn.Module):
 
+    """
+    DEEP DEPENDENT DIRICHLET DISTRIBTION, NEED TO LOOK UP FACTOR MODELS FOR A
+    BETTER IDEA OF JUST HOW THIS STUFF WORKS. 
+    """
+    def __init__(self, state_size, action_size, states, hidden_layer = 64):
+        super(RWS_DISCRETE_POLICY, self).__init__()
+        self.epsilon = 0.000001
+
+    def forward(self):
+        print("wow")
+        return None
+
+class CD_TRANSITION_DYNAMICS_MODEL_DISC(torch.nn.Module):
+    """
+    CONCRETE DISTRIBUTION FOR A DISCRETE APPROXIMATION THAT WE CAN PASS GRADIENTS
+    THROUGH MORE STABLY AND EFFICIENTLY, AND WE SHOULDNT NEED AS MUCH STARTING
+    ABOUT THE ENVIROMENT. IT SHOULD ALSO BE WAY MORE EFFIENT THEN DEEP DEPENDENT
+    DIRICHLET DISTRIBUTION.
+    """
     def __init__(self, state_size, action_size, states, hidden_layer = 64):
         super(RWS_DISCRETE_POLICY, self).__init__()
         self.epsilon = 0.000001
